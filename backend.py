@@ -100,6 +100,7 @@ if __name__ == '__main__':
     import data
     import mnist_net
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"using {device}")
     model, optimizer = mnist_net.get_model(device)
     train_data, val_data = data.get_data('MNIST')
     fit(model, optimizer, train_data, val_data, device=device)
