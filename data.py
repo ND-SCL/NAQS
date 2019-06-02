@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import DataLoader
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -103,7 +104,8 @@ DATA = {
 
 
 def get_data(name='MNIST'):
-    return DATA[name]['generator']()
+    dataloader = DATA[name]['generator']()
+    return dataloader
 
 
 def get_data_info(name='CIFAR10'):
