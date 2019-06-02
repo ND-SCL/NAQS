@@ -6,23 +6,25 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
         verbose=True, device=torch.device('cpu')):
     for epoch in range(epochs):
         if train_data is not None:
-            loss, acc = epoch_fit(model, train_data, optimizer)
+            loss, acc = epoch_fit(model, train_data, optimizer, device)
             if verbose:
                 print(f"Epoch {epoch+1:3d}/{epochs}, " +
                       f"Train Loss: {loss}, Train Acc: {acc:6.3%}", end='')
         if val_data is not None:
-            loss, acc = epoch_fit(model, val_data)
+            loss, acc = epoch_fit(model, val_data, device=device)
             if verbose:
                 print(f" Val Loss: {loss}, Val Acc: {acc:6.3%}")
 
 
-def epoch_fit(model, data, optimizer=None):
+def epoch_fit(model, data, optimizer=None, device=torch.device('cpu')):
     if optimizer is not None:
         model.train()
     else:
         model.eval()
     running_loss, running_correction, running_total = 0, 0, 0
     for input_batch, label_batch in data:
+        input_batch, label_batch = \
+            input_batch.to(device), label_batch.to(device)
         loss, correction = batch_fit(
             model, input_batch, label_batch, optimizer)
         running_loss += loss
