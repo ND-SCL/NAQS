@@ -3,28 +3,26 @@ import torch.nn.functional as F
 
 
 def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
-        verbose=True, device=torch.device('cpu')):
+        verbose=True):
     for epoch in range(epochs):
         if train_data is not None:
-            loss, acc = epoch_fit(model, train_data, optimizer, device)
+            loss, acc = epoch_fit(model, train_data, optimizer)
             if verbose:
                 print(f"Epoch {epoch+1:3d}/{epochs}, " +
                       f"Train Loss: {loss}, Train Acc: {acc:6.3%}", end='')
         if val_data is not None:
-            loss, acc = epoch_fit(model, val_data, device=device)
+            loss, acc = epoch_fit(model, val_data)
             if verbose:
                 print(f" Val Loss: {loss}, Val Acc: {acc:6.3%}")
 
 
-def epoch_fit(model, data, optimizer=None, device=torch.device('cpu')):
+def epoch_fit(model, data, optimizer=None):
     if optimizer is not None:
         model.train()
     else:
         model.eval()
     running_loss, running_correction, running_total = 0, 0, 0
     for input_batch, label_batch in data:
-        input_batch, label_batch = \
-            input_batch.to(device), label_batch.to(device)
         loss, correction = batch_fit(
             model, input_batch, label_batch, optimizer)
         running_loss += loss
@@ -102,5 +100,5 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"using {device}")
     model, optimizer = mnist_net.get_model(device)
-    train_data, val_data = data.get_data('MNIST')
-    fit(model, optimizer, train_data, val_data, device=device)
+    train_data, val_data = data.get_data('MNIST', device)
+    fit(model, optimizer, train_data, val_data)

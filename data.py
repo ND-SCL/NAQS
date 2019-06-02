@@ -14,7 +14,7 @@ def get_mnist():
             download=True,
             transform=mnist_transform
         ),
-        batch_size=32,
+        batch_size=64,
         shuffle=True,
         num_workers=2
     )
@@ -25,7 +25,7 @@ def get_mnist():
             download=True,
             transform=mnist_transform
         ),
-        batch_size=32,
+        batch_size=64,
         shuffle=False,
         num_workers=2
     )
@@ -103,9 +103,24 @@ DATA = {
 }
 
 
-def get_data(name='MNIST'):
-    dataloader = DATA[name]['generator']()
-    return dataloader
+class WrappedDataLoader:
+    def __init__(self, dataloader, device):
+        self.dataloader = dataloader
+        self.device = device
+
+    def __len__(self):
+        return len(self.dataloader)
+
+    def __iter__(self):
+        for b in self.dataloader:
+            yield [v.to(self.device) for v in b]
+
+
+def get_data(name='MNIST', device=torch.device('cpu')):
+    trainloader, valloader = DATA[name]['generator']()
+    # return dataloader
+    return WrappedDataLoader(trainloader, device), \
+        WrappedDataLoader(valloader, device)
 
 
 def get_data_info(name='CIFAR10'):
