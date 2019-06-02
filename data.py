@@ -14,7 +14,7 @@ def get_mnist():
             download=True,
             transform=mnist_transform
         ),
-        batch_size=64,
+        batch_size=128,
         shuffle=True,
         num_workers=2
     )
@@ -25,7 +25,7 @@ def get_mnist():
             download=True,
             transform=mnist_transform
         ),
-        batch_size=64,
+        batch_size=128,
         shuffle=False,
         num_workers=2
     )
