@@ -11,7 +11,8 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
                 print(f"Epoch {epoch+1:3d}/{epochs}, " +
                       f"Train Loss: {loss}, Train Acc: {acc:6.3%}", end='')
         if val_data is not None:
-            loss, acc = epoch_fit(model, val_data)
+            with torch.no_grad():
+                loss, acc = epoch_fit(model, val_data)
             if verbose:
                 print(f" Val Loss: {loss}, Val Acc: {acc:6.3%}")
 
@@ -44,61 +45,12 @@ def batch_fit(model, input_batch, label_batch, optimizer=None):
     return loss.item(), correction.item()
 
 
-# def trainer(net, validate=True):
-#     # optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.0)
-#     optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0.0, amsgrad=True)
-#     # optimizer = optim.SGD(net.parameters(), lr=0.0005, momentum=0.9, weight_decay=5e-4)
-#     # net = net.to(device)
-#     epochs = 150
-#     for epoch in range(epochs):
-#         running_loss = 0
-#         running_correction = 0
-#         running_total = 0
-#         net.train()
-#         for data in trainloader:
-#             images, labels = data
-#             images, labels = images.to(device), labels.to(device)
-#             optimizer.zero_grad()
-#             outputs = net(images)
-#             loss = criterion(outputs, labels)
-#             loss.backward()
-#             optimizer.step()
-#             running_loss += loss.item()
-#             _, predicted = torch.max(outputs, 1)
-#             running_correction += (predicted == labels).sum().item()
-#             running_total += images.size(0)
-#         if validate:
-#             val_loss, val_acc =  validator(net)
-#             print(f"Epoch {epoch+1:3d}/{epochs}, Loss: {running_loss/running_total*batch_size}, Acc: {running_correction/running_total:6.3%}, Val loss: {val_loss}, Val acc: {val_acc:6.3%}")
-#         else:
-#             print(f"Epoch {epoch+1:3d}/{epochs}, Loss: {running_loss/running_total*batch_size}, Acc: {running_correction/running_total:6.3%}")
-
-
-# def validator(net):
-#     # net = net.to(device)
-#     net.eval()
-#     running_loss = 0
-#     running_correction = 0
-#     running_total = 0
-#     for data in validloader:
-#         images, labels = data
-#         images, labels = images.to(device), labels.to(device)
-#         outputs = net(images)
-#         loss = criterion(outputs, labels)
-#         running_loss += float(loss)
-#         logits = F.softmax(outputs, dim=1)
-#         _, predicted = torch.max(logits, 1)
-#         running_correction += (predicted == labels).sum().item()
-#         running_total += images.size(0)
-#     return running_loss/running_total*batch_size,\
-#         running_correction/running_total
-
-
 if __name__ == '__main__':
     import data
     import mnist_net
+    torch.manual_seed(0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"using {device}")
+    print(f"using device: {device}")
     model, optimizer = mnist_net.get_model(device)
     train_data, val_data = data.get_data('MNIST', device)
     fit(model, optimizer, train_data, val_data)

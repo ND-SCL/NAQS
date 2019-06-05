@@ -1,6 +1,6 @@
 import torch
 
-from child_cnn_linear import compute_padding
+# from child_cnn_linear import compute_padding
 
 # test padding computation
 # height = 31
@@ -27,27 +27,32 @@ from child_cnn_linear import compute_padding
 # print(f"output shape: {output.size()}")
 
 # test layers not wrapped in model
-class CNN(nn.Module):
-    def __init__(self, conv_layers, pool_layers, drop_layers, fc_layers):
-        super(CNN, self).__init__()
-        self.conv_layers = conv_layers
-        self.pool_layers = pool_layers
-        self.drop_layers = drop_layers
-        self.fc_layers = fc_layers
-        for i in range(len(conv_layers)):
-            setattr(self, 'conv{}'.format(i+1), pool_layers[i])
-            # setattr(self, f'conv{i+1}', conv_layers[i])
-        for i in range(len(pool_layers)):
-            if pool_layers[i]:
-                setattr(self, 'pool{}'.format(i+1), pool_layers[i])
-        for i in range(len(drop_layers)):
-            if drop_layers[i]:
-                setattr(self, 'drop{}'.format(i+1), drop_layers[i])
-        for j in range(len(fc_layers)):
-            setattr(self, 'fc{}'.format(j+1), fc_layers[j])
+# class CNN(nn.Module):
+#     def __init__(self, conv_layers, pool_layers, drop_layers, fc_layers):
+#         super(CNN, self).__init__()
+#         self.conv_layers = conv_layers
+#         self.pool_layers = pool_layers
+#         self.drop_layers = drop_layers
+#         self.fc_layers = fc_layers
+#         for i in range(len(conv_layers)):
+#             setattr(self, 'conv{}'.format(i+1), pool_layers[i])
+#             # setattr(self, f'conv{i+1}', conv_layers[i])
+#         for i in range(len(pool_layers)):
+#             if pool_layers[i]:
+#                 setattr(self, 'pool{}'.format(i+1), pool_layers[i])
+#         for i in range(len(drop_layers)):
+#             if drop_layers[i]:
+#                 setattr(self, 'drop{}'.format(i+1), drop_layers[i])
+#         for j in range(len(fc_layers)):
+#             setattr(self, 'fc{}'.format(j+1), fc_layers[j])
 
-    def forward(self, x):
-        x = conv_forward(x, self.conv_layers, self.pool_layers, self.drop_layers)
-        x = x.view(x.size()[0], -1)
-        x = fc_forward(x, self.fc_layers)
-        return x
+#     def forward(self, x):
+#         x = conv_forward(x, self.conv_layers, self.pool_layers, self.drop_layers)
+#         x = x.view(x.size()[0], -1)
+#         x = fc_forward(x, self.fc_layers)
+#         return x
+
+print("something")
+
+if __name__ == '__main__':
+    print("anything")

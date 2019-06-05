@@ -1,30 +1,22 @@
-# import torch
-import torchvision.datasets as datasets
+ARCH_SPACE = {
+    "filter_height": (1, 3, 5, 7),
+    "filter_width": (1, 3, 5, 7),
+    'stride_height': (1, 2, 3),
+    'stride_width': (1, 2, 3),
+    "num_filters": (8, 16, 24, 32, 48, 64, 96, 128),
+    "pool_size": (1, 2)
+    }
+
+QUAN_SPACE = {
+    "activation_num_int_bits": (1, 2, 3, 4, 5),
+    "activation_num_frac_bits": (0, 1, 2, 3, 4, 5, 6, 7),
+    "weight_num_int_bits": (0, 1, 2, 3, 4, 5),
+    "weight_num_frac_bits": (1, 2, 3, 4, 5, 6, 7)
+    }
+
+CLOCK_FREQUENCY = 100e6
 
 
-class HymenopteraData(datasets.ImageFolder):
-    def __init__(self, root, train=True, download=False, transform=[]):
-        if train:
-            self.root = root + '/train'
-        else:
-            self.root = root + 'val'
-        datasets.ImageFolder.__init__(
-            self,
-            root=root,
-            transform=transform)
-
-# class hymenoptera(datasets):
-#     def __init__(self):
-#         pass
-
-#     def __getitem__(self):
-#         pass
-
-#     def __len__(self):
-#         pass
-
-DATA = {
-    'MNIST': (datasets.MNIST, (1, 28, 28)),
-    'CIFAR10': (datasets.CIFAR10, (3, 32, 32)),
-    'hymenoptera_data': (HymenopteraData, ())
-}
+if __name__ == '__main__':
+    print("architecture space: ", ARCH_SPACE)
+    print("quantization space: ", QUAN_SPACE)
