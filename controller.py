@@ -24,18 +24,18 @@ class PolicyNetwork(nn.Module):
             input_size=input_size,
             hidden_size=hidden_size,
             num_layers=num_layers)
-        for i in range(self.seq_len):
-            setattr(self, 'embedding_{}'.format(i),
-                    nn.Embedding(self.para_num_choices[(i-1) %
-                                 self.num_paras_per_layer], input_size
-                                 )
-                    )
-            setattr(self, 'classfie_{}'.format(i),
-                    nn.Linear(
-                        hidden_size,
-                        self.para_num_choices[i % self.num_paras_per_layer]
+        for i in range(self.para_num_layers):
+            for j in range(self.num_paras_per_layer):
+                setattr(self, 'embedding_{}_{}'.format(i, j),
+                        nn.Embedding(self.para_num_choices[j-1], input_size
+                                     )
                         )
-                    )
+                setattr(self, 'classfie_{}_{}'.format(i, j),
+                        nn.Linear(
+                            hidden_size,
+                            self.para_num_choices[j]
+                            )
+                        )
 
         for i in range(self.para_num_layers):
             for j in range(0, i):
