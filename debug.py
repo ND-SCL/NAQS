@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 # from child_cnn_linear import compute_padding
 
@@ -52,7 +53,26 @@ import torch
 #         x = fc_forward(x, self.fc_layers)
 #         return x
 
-print("something")
-
-if __name__ == '__main__':
-    print("anything")
+from child import compute_padding
+import math
+input_shape = (3, 8, 8)
+kernel_size = (2, 3)
+stride_size = (3, 4)
+num_filters = 1
+image = torch.randn(1, *input_shape)
+padding_height, out_height = compute_padding(
+    input_shape[1], kernel_size[0], stride_size[0])
+padding_width, out_width = compute_padding(
+    input_shape[2], kernel_size[1], stride_size[1])
+conv_pad = nn.ZeroPad2d((
+    math.floor(padding_width/2),
+    math.ceil(padding_width/2),
+    math.floor(padding_height/2),
+    math.ceil(padding_height/2)
+    ))
+conv = nn.Conv2d(
+    input_shape[0], num_filters,
+    kernel_size=kernel_size,
+    stride=stride_size)
+output = conv(conv_pad(image))
+print(output.shape)

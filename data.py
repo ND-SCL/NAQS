@@ -123,5 +123,5 @@ def get_data(name='MNIST', device=torch.device('cpu')):
         WrappedDataLoader(valloader, device)
 
 
-def get_data_info(name='CIFAR10'):
+def get_info(name='CIFAR10'):
     return DATA[name]['shape'], DATA[name]['num_classes']

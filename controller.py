@@ -27,27 +27,23 @@ class PolicyNetwork(nn.Module):
         for i in range(self.para_num_layers):
             for j in range(self.num_paras_per_layer):
                 setattr(self, 'embedding_{}_{}'.format(i, j),
-                        nn.Embedding(self.para_num_choices[j-1], input_size
-                                     )
+                        nn.Embedding(self.para_num_choices[
+                            (j-1) % self.num_paras_per_layer], input_size)
                         )
-                setattr(self, 'classfie_{}_{}'.format(i, j),
+                setattr(self, 'classifier{}_{}'.format(i, j),
                         nn.Linear(
                             hidden_size,
                             self.para_num_choices[j]
                             )
                         )
 
-        for i in range(self.para_num_layers):
-            for j in range(0, i):
-                setattr(self, 'sigmoid_{}_{}'.format(j, i),
-                        Sigmoid(hidden_size)
-                        )
-
-    def sample(self, x, state, para_index=0):
-        embedding = getattr(self, 'embedding_{}'.format(para_index))
+    def sample(self, x, state, layer_index=0, para_index=0):
+        embedding = getattr(
+            self, 'embedding_{}_{}'.format(layer_index, para_index))
         x = embedding(x)
         x, state = self.rnn(x, state)
-        classifier = getattr(self, 'classfie_{}'.format(para_index))
+        classifier = getattr(
+            self, 'classifier{}_{}'.format(layer_index, para_index))
         x = classifier(x)
         # x = 4 * F.tanh(x)
         return x, state
@@ -55,22 +51,13 @@ class PolicyNetwork(nn.Module):
     def forward(self, x, state):
         # the element shape of x is 1 x batch_size
         unscaled_logits = []
-        for i in range(len(x)):
-            y, state = self.sample(x[i], state, i)
-            # the shape of y is 1 x batch_size x num_values
-            unscaled_logits.append(y)
+        for i in range(self.para_num_layers):
+            for j in range(self.num_paras_per_layer):
+                y, state = self.sample(
+                    x[i*self.num_paras_per_layer + j], state, i, j)
+                # the shape of y is 1 x batch_size x num_values
+                unscaled_logits.append(y)
         return unscaled_logits
-
-    def rollout(self, x, state):
-        rollout = []
-        with torch.no_grad():
-            for i in range(self.seq_len):
-                x, state = self.sample(x, state, i)
-                pi = F.softmax(torch.squeeze(x, dim=0), dim=-1)
-                action = torch.multinomial(pi, 1)
-                x = action
-                rollout.append(action.item())
-        return rollout
 
 
 class Sigmoid(nn.Module):
@@ -78,10 +65,11 @@ class Sigmoid(nn.Module):
         super(Sigmoid, self).__init__()
         self.w_prev = nn.Linear(hidden_size, hidden_size, bias=False)
         self.w_curr = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.v = nn.Linear(hidden_size, 1, bias=False)
 
     def forward(self, hj, hi):
         x = F.tanh(self.w_prev(hj) + self.w_curr(hi))
-        return F.sigmoid(v * x)
+        return F.sigmoid(self.v(x))
 
 
 class Agent():
@@ -92,15 +80,16 @@ class Agent():
         self.num_paras_per_layer = len(self.para_space)
         self.para_names, self.para_values = zip(*self.para_space.items())
         self.seq_len = self.num_paras_per_layer * para_num_layers
+        self.device = device
 
         self.model = PolicyNetwork(tuple(len(v) for v in self.para_values),
                                    para_num_layers).to(device)
         self.optimizer = optim.SGD(self.model.parameters(), lr, momentum=0.0)
-        self.initial_h = torch.randn(num_layers, 1, hidden_size)
-        self.initial_c = torch.randn(num_layers, 1, hidden_size)
+        self.initial_h = torch.randn(num_layers, 1, hidden_size).to(device)
+        self.initial_c = torch.randn(num_layers, 1, hidden_size).to(device)
         self.initial_input = torch.randint(
             len(self.para_values[-1]), (1, 1)
-            )
+            ).to(device)
         # input shape = seq_len x batch_size
         self.rollout_buffer = []
         self.reward_buffer = []
@@ -113,12 +102,14 @@ class Agent():
         state = (self.initial_h, self.initial_c)
         rollout = []
         with torch.no_grad():
-            for i in range(self.seq_len):
-                x, state = self.model.sample(x, state, i)
-                pi = F.softmax(torch.squeeze(x, dim=0), dim=-1)
-                action = torch.multinomial(pi, 1)
-                x = action
-                rollout.append(action.item())
+            for i in range(self.para_num_layers):
+                for j in range(self.num_paras_per_layer):
+                    x, state = self.model.sample(x, state, i, j)
+                    pi = F.softmax(torch.squeeze(x, dim=0), dim=-1)
+                    print("pi shape ", pi.shape)
+                    action = torch.multinomial(pi, 1)
+                    x = action
+                    rollout.append(action.item())
         return rollout  # self.model.rollout(x, state)
 
     def train_step(self, optimize=False):
@@ -139,6 +130,12 @@ class Agent():
                               rollout_list, reward_batch)
         self.rollout_buffer.clear()
         self.reward_buffer.clear()
+        self.initial_h = torch.randn(
+            num_layers, 1, hidden_size).to(self.device)
+        self.initial_c = torch.randn(
+            num_layers, 1, hidden_size).to(self.device)
+        self.initial_input = torch.randint(
+            len(self.para_values[-1]), (1, 1)).to(self.device)
         return loss
 
     def store_rollout(self, rollout, reward):
@@ -200,26 +197,33 @@ if __name__ == '__main__':
         return (max_error-error)/max_error
 
     from config import QUAN_SPACE
-    agent = Agent(QUAN_SPACE, 6)
-    batch_size = 5
-    max_epochs = 100
-    best_rollout = 0
-    best_reward = -100000
-    start = time.time()
-    for e in range(max_epochs):
-        for i in range(batch_size):
-            rollout = agent.rollout()
-            reward = get_reward(rollout)
-            if reward == 1:
-                print(e*batch_size + i)
-                quit()
-            if reward > best_reward:
-                best_reward = reward
-                best_rollout = rollout
-            print("action: {}, reward: {}".format(rollout, reward))
-            agent.store_rollout(rollout, reward)
-        loss = agent.train_step()
-        print("epoch {}, loss: {}".format(e, loss))
-        print("best rollout {}, best reward: {}".format(
-            best_rollout, best_reward))
-    print("elasped time is {}".format(time.time()-start))
+
+    def controller_bench():
+        agent = Agent(QUAN_SPACE, 6)
+        batch_size = 5
+        max_epochs = 100
+        best_rollout = 0
+        best_reward = -100000
+        start = time.time()
+        for e in range(max_epochs):
+            for i in range(batch_size):
+                rollout = agent.rollout()
+                reward = get_reward(rollout)
+                if reward == 1:
+                    print(e*batch_size + i)
+                    # quit()
+                if reward > best_reward:
+                    best_reward = reward
+                    best_rollout = rollout
+                print("action: {}, reward: {}".format(rollout, reward))
+                agent.store_rollout(rollout, reward)
+            loss = agent.train_step()
+            print("epoch {}, loss: {}".format(e, loss))
+            print("best rollout {}, best reward: {}".format(
+                best_rollout, best_reward))
+        print("elasped time is {}".format(time.time()-start))
+
+    # controller_bench()
+    agent = Agent(QUAN_SPACE, 2)
+    rollout = agent.rollout()
+    print(rollout)
