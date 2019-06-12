@@ -113,6 +113,7 @@ class Agent():
 
     def rollout(self):
         x = self.initial_input
+        print(x.device)
         state = (self.initial_h, self.initial_c)
         rollout = []
         hj_list = []
