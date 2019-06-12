@@ -286,4 +286,5 @@ if __name__ == '__main__':
     random.seed(seed)
     from config import QUAN_SPACE
     from controller_bench import controller_bench
-    controller_bench(QUAN_SPACE, 4)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    controller_bench(QUAN_SPACE, 4, device)
