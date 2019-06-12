@@ -114,7 +114,6 @@ class Agent():
 
     def rollout(self):
         x = self.initial_input
-        print(x.device)
         state = (self.initial_h, self.initial_c)
         rollout = []
         hj_list = []
@@ -136,7 +135,7 @@ class Agent():
                     anchor_point.append(0)
                 rollout.append(anchor_point)
                 x = anchor_encode(anchor_point)
-                x = torch.tensor(x).expand(1, 1)
+                x = torch.tensor(x).expand(1, 1).to(self.device)
                 for j in range(self.num_paras_per_layer):
                     x, state = self.model.sample_para(x, state, i, j)
                     pi = F.softmax(torch.squeeze(x, dim=0), dim=-1)
