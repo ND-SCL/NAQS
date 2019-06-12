@@ -178,7 +178,7 @@ class Agent():
                         for v in list(zip(*self.rollout_buffer))]
         reward_list = \
             torch.tensor(self.reward_buffer).unsqueeze(-1).to(self.device)
-        E = torch.zeros(self.batch_size, 1)
+        E = torch.zeros(self.batch_size, 1).to(self.device)
         for i in range(self.para_num_layers):
             sigmoids = logits[i * (self.num_paras_per_layer+1)]
             sig_actions = rollout_list[i * (self.num_paras_per_layer+1)]
