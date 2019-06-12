@@ -64,7 +64,7 @@ class PolicyNetwork(nn.Module):
         embedding = getattr(self, 'embedding_{}_x'.format(layer_index))
         x = embedding(x)
         print(x.device)
-        print(state.device)
+        print(state[0].device, state[1].device)
         hi, state = self.rnn(x, state)
         sigmoids = []
         for k in range(len(hj_list)):
