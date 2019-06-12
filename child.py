@@ -16,6 +16,7 @@ class Cell():
         self.in_channels = 0
         self.output_shape = ()
         self.conv_pad = []
+        self.used = False
         self.conv = None
         self.pool = None
         self.drop = None
@@ -48,8 +49,13 @@ def build_graph(input_shape, arch_paras):
             anchor_point = layer_paras['anchor_point']
             in_channels, in_height, in_width = 0, 0, 0
             out_height, out_width = 0, 0
+            if cell_id == len(arch_paras) - 1:
+                for i in range(cell_id-1):
+                    if graph[i].used is False:
+                        anchor_point[i] = 1
             for l in range(len(anchor_point)):
                 if anchor_point[l] == 1:
+                    graph[l].used = True
                     cell.prev.append(l)
                     in_channels += graph[l].output_shape[0]
                     in_height = max(
@@ -275,7 +281,7 @@ if __name__ == '__main__':
     random.seed(seed)
     torch.manual_seed(seed)
 
-    num_layers = 2
+    num_layers = 6
     agent = controller_nl.Agent(ARCH_SPACE, num_layers)
     rollout, paras = agent.rollout()
     input_shape = (3, 32, 32)
@@ -286,7 +292,10 @@ if __name__ == '__main__':
     # for cell in graph:
     #     print(cell)
     model = CNN(input_shape, paras, num_classes)
-    input = torch.randn(5, *input_shape)
-    print(input.shape)
-    output = model(input)
-    print(output, output.shape)
+    # input = torch.randn(5, *input_shape)
+    # print(input.shape)
+    # output = model(input)
+    # print(output, output.shape)
+    graph = model.graph
+    for cell in graph:
+        print(cell)
