@@ -53,6 +53,7 @@ class PolicyNetwork(nn.Module):
         # print('para_index: ', para_index)
         embedding = getattr(
             self, 'embedding_{}_{}'.format(layer_index, para_index))
+        print(x.device)
         x = embedding(x)
         x, state = self.rnn(x, state)
         classifier = getattr(
