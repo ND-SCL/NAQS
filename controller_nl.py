@@ -148,9 +148,9 @@ class Agent():
     def forward(self):
         rollout_buffer = encode_rollouts(self.rollout_buffer)
         # print(rollout_buffer)
-        rollout_list = [torch.tensor(v)
+        rollout_list = [torch.tensor(v).to(self.device)
                         for v in list(zip(*rollout_buffer))]
-        x = [self.initial_input.expand(1, self.batch_size)] + \
+        x = [self.initial_input.repeat(1, self.batch_size)] + \
             [rollout_list[i].unsqueeze(0) for i in range(len(rollout_list)-1)]
         # print(rollout_list)
         # print(x)
@@ -174,9 +174,10 @@ class Agent():
         return logits
 
     def backward(self, logits):
-        rollout_list = [torch.tensor(v)
+        rollout_list = [torch.tensor(v).to(self.device)
                         for v in list(zip(*self.rollout_buffer))]
-        reward_list = torch.tensor(self.reward_buffer).unsqueeze(-1)
+        reward_list = \
+            torch.tensor(self.reward_buffer).unsqueeze(-1).to(self.device)
         E = torch.zeros(self.batch_size, 1)
         for i in range(self.para_num_layers):
             sigmoids = logits[i * (self.num_paras_per_layer+1)]
