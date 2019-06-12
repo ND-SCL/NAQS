@@ -29,7 +29,8 @@ class Cell():
             f"padding: {self.conv_pad} " + \
             f"conv: {self.conv} " + \
             f"pool: {self.pool} " + \
-            f"drop: {self.drop}"
+            f"drop: {self.drop} " + \
+            f"used: {self.used}"
 
 
 def build_graph(input_shape, arch_paras):
@@ -50,7 +51,7 @@ def build_graph(input_shape, arch_paras):
             in_channels, in_height, in_width = 0, 0, 0
             out_height, out_width = 0, 0
             if cell_id == len(arch_paras) - 1:
-                for i in range(cell_id-1):
+                for i in range(cell_id):
                     if graph[i].used is False:
                         anchor_point[i] = 1
             for l in range(len(anchor_point)):
@@ -105,7 +106,7 @@ def build_graph(input_shape, arch_paras):
             else:
                 cell.prev.append(-1)
                 in_channels = input_shape[0]
-                print(input_shape)
+                # print(input_shape)
                 out_height = math.ceil(
                     (input_shape[1] - filter_height) / stride_height) + 1
                 out_width = math.ceil(
@@ -120,10 +121,6 @@ def build_graph(input_shape, arch_paras):
                         filter_width,
                         stride_width
                         )
-                print(padding_height)
-                print(padding_width)
-                print(out_height)
-                print(out_width)
                 cell.conv_pad = [nn.ZeroPad2d((
                     math.floor(padding_width/2),
                     math.ceil(padding_width/2),
@@ -269,7 +266,7 @@ def get_model(input_shape, paras, num_classes,
     model = CNN(input_shape, paras, num_classes).to(device)
     optimizer = optim.Adam(
         model.parameters(),
-        lr=1e-4,
+        lr=1e-3,
         betas=(0.9, 0.999),
         eps=1e-8,
         weight_decay=0.0,
