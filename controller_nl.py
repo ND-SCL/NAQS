@@ -63,8 +63,8 @@ class PolicyNetwork(nn.Module):
     def sample_anchor(self, x, state, layer_index=0, hj_list=[]):
         embedding = getattr(self, 'embedding_{}_x'.format(layer_index))
         x = embedding(x)
-        print(x.device)
-        print(state[0].device, state[1].device)
+        # print(x.device)
+        # print(state[0].device, state[1].device)
         hi, state = self.rnn(x, state)
         sigmoids = []
         for k in range(len(hj_list)):
@@ -156,8 +156,8 @@ class Agent():
         # print(x)
         # quit()
         state = (
-            self.initial_h.expand(num_layers, self.batch_size, hidden_size),
-            self.initial_c.expand(num_layers, self.batch_size, hidden_size)
+            self.initial_h.repeat(1, self.batch_size, 1),
+            self.initial_c.repeat(1, self.batch_size, 1)
             )
         logits = []
         hj_list = []
