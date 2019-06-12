@@ -1,5 +1,6 @@
 import random
 import time
+import torch
 
 import controller_nl as ctrl
 
@@ -35,14 +36,14 @@ def get_reward(rollout, target):
     return (max_error-error)/max_error
 
 
-def controller_bench(space, num_layers):
+def controller_bench(space, num_layers, device=torch.device('cpu')):
     batch_size = 5
     max_epochs = 200
     best_rollout = []
     best_paras = []
     best_reward = -100000
     start = time.time()
-    agent = ctrl.Agent(space, num_layers)
+    agent = ctrl.get_agent(space, num_layers, device)
     target = get_target(space, num_layers)
     for e in range(max_epochs):
         for i in range(batch_size):
@@ -69,7 +70,6 @@ def controller_bench(space, num_layers):
 
 
 if __name__ == '__main__':
-    import torch
     seed = 0
     torch.manual_seed(seed)
     random.seed(seed)
