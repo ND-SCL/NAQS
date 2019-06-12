@@ -53,7 +53,6 @@ class PolicyNetwork(nn.Module):
         # print('para_index: ', para_index)
         embedding = getattr(
             self, 'embedding_{}_{}'.format(layer_index, para_index))
-        print(x.device)
         x = embedding(x)
         x, state = self.rnn(x, state)
         classifier = getattr(
@@ -64,6 +63,8 @@ class PolicyNetwork(nn.Module):
     def sample_anchor(self, x, state, layer_index=0, hj_list=[]):
         embedding = getattr(self, 'embedding_{}_x'.format(layer_index))
         x = embedding(x)
+        print(x.device)
+        print(state.device)
         hi, state = self.rnn(x, state)
         sigmoids = []
         for k in range(len(hj_list)):
