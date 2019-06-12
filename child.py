@@ -105,6 +105,7 @@ def build_graph(input_shape, arch_paras):
             else:
                 cell.prev.append(-1)
                 in_channels = input_shape[0]
+                print(input_shape)
                 out_height = math.ceil(
                     (input_shape[1] - filter_height) / stride_height) + 1
                 out_width = math.ceil(
@@ -119,6 +120,10 @@ def build_graph(input_shape, arch_paras):
                         filter_width,
                         stride_width
                         )
+                print(padding_height)
+                print(padding_width)
+                print(out_height)
+                print(out_width)
                 cell.conv_pad = [nn.ZeroPad2d((
                     math.floor(padding_width/2),
                     math.ceil(padding_width/2),
@@ -180,7 +185,7 @@ def build_graph(input_shape, arch_paras):
 
 
 def compute_padding(input_size, kernel_size, stride):
-    output_size = math.floor((input_size + kernel_size - 1) / stride)
+    output_size = math.floor((input_size + stride - 1) / stride)
     padding = max(0, (output_size-1) * stride + kernel_size - input_size)
     # if (input_size - kernel_size) % stride == 0:
     #     padding = 0

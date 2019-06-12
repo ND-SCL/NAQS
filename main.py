@@ -18,8 +18,13 @@ def get_args():
     parser.add_argument(
         '-l', '--layers',
         type=int,
-        default=2,
+        default=1,
         help="the number of child network layers")
+    parser.add_argument(
+        '-e', '--epoch',
+        type=int,
+        default=40,
+        help="the total epochs for model fitting")
     return parser.parse_args()
 
 
@@ -31,10 +36,13 @@ def main():
     print(f"using device: {device}")
     train_data, val_data = data.get_data(dataset, device)
     input_shape, num_classes = data.get_info(dataset)
+    print(input_shape)
     agent = ctrl.get_agent(ARCH_SPACE, num_layers, device)
     rollout, paras = agent.rollout()
     model, optimizer = child.get_model(input_shape, paras, num_classes, device)
-    backend.fit(model, optimizer, train_data, val_data)
+    for cell in model.graph:
+        print(cell)
+    backend.fit(model, optimizer, train_data, val_data, args.epoch)
 
 
 if __name__ == '__main__':
