@@ -207,7 +207,7 @@ class CNN(nn.Module):
         # for cell in self.graph:
         #     print(cell)
 
-    def forward(self, x, quantize=False):
+    def forward(self, x, quan_paras=None):
         output = []
         image = x
         for cell in self.graph:
@@ -230,11 +230,32 @@ class CNN(nn.Module):
             pool_pad = getattr(self, 'pool_pad_{}'.format(cell.id))
             pool = getattr(self, 'pool_{}'.format(cell.id))
             drop = getattr(self, 'drop_{}'.format(cell.id))
+            if quan_paras is not None:
+                weight, bias = conv.weight, conv.bias
+                conv.weight = nn.Parameter(
+                    quantize(
+                        weight,
+                        quan_paras[cell.id]['weight_num_int_bits'],
+                        quan_paras[cell.id]['weight_num_frac_bits']
+                        )
+                    )
+                conv.bias = nn.Parameter(
+                    quantize(
+                        bias,
+                        quan_paras[cell.id]['weight_num_int_bits'],
+                        quan_paras[cell.id]['weight_num_frac_bits']
+                        )
+                    )
             x = F.relu(conv(x))
-            # print("output shape before pool: ", x.shape)
+            if quan_paras is not None:
+                conv.weight, conv.bias = weight, bias
+                x = quantize(
+                    x,
+                    quan_paras[cell.id]['act_num_int_bits'],
+                    quan_paras[cell.id]['act_num_frac_bits']
+                    )
             x = pool(pool_pad(x))
             x = drop(x)
-            # print("output shape: ", x.shape)
             output.append(x)
         x = x.view(x.size()[0], self.num_features)
         return self.fc(x)

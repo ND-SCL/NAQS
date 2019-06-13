@@ -1,0 +1,10 @@
+INFORMATION
+mode: 					 nas
+dataset: 				 MNIST
+number of child network layers: 	 1
+architecture episodes: 			 1000
+====================Start exploring architecture space====================
+Sample Architecture ID: 1, Sampled actions: [[], 0, 3, 2, 1, 0, 1]
+Architecture Reward: 0.911, Elasped time: 330.39653992652893, Average time: 330.39653992652893
+Best Reward: 0.911, ID: 1, Rollout: [[], 0, 3, 2, 1, 0, 1]
+Sample Architecture ID: 2, Sampled actions: [[], 0, 1, 0, 2, 2, 1]

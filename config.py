@@ -8,8 +8,8 @@ ARCH_SPACE = {
     }
 
 QUAN_SPACE = {
-    "activation_num_int_bits": (1, 2, 3, 4, 5),
-    "activation_num_frac_bits": (0, 1, 2, 3, 4, 5, 6, 7),
+    "act_num_int_bits": (1, 2, 3, 4, 5),
+    "act_num_frac_bits": (0, 1, 2, 3, 4, 5, 6, 7),
     "weight_num_int_bits": (0, 1, 2, 3, 4, 5),
     "weight_num_frac_bits": (1, 2, 3, 4, 5, 6, 7)
     }

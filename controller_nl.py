@@ -9,7 +9,6 @@ import torch.optim as optim
 input_size = 35
 hidden_size = 35
 num_layers = 2
-batch_size = 5
 lr = 0.2
 
 
@@ -88,7 +87,7 @@ class Sigmoid(nn.Module):
 
 
 class Agent():
-    def __init__(self, para_space, para_num_layers,
+    def __init__(self, para_space, para_num_layers, batch_size=5,
                  device=torch.device('cpu')):
         self.para_space = para_space
         self.para_num_layers = para_num_layers
@@ -96,6 +95,7 @@ class Agent():
         self.para_names, self.para_values = zip(*self.para_space.items())
         self.seq_len = self.num_paras_per_layer * para_num_layers
         self.device = device
+        self.batch_size = batch_size
 
         self.model = PolicyNetwork(tuple(len(v) for v in self.para_values),
                                    para_num_layers).to(device)
@@ -210,9 +210,9 @@ class Agent():
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-        return E.item()
+        return
 
-    def train_step(self, optimize=False):
+    def train_step(self):
         self.batch_size = len(self.rollout_buffer)
         if self.batch_size > 0:
             logits = self.forward()
@@ -232,6 +232,8 @@ class Agent():
         if len(self.reward_history) > self.period:
             self.reward_history.pop(0)
         self._update_ema(reward)
+        if len(self.rollout_buffer) == self.batch_size:
+            self.train_step()
 
     def _update_ema(self, reward):
         if len(self.reward_history) < self.period:
@@ -278,8 +280,9 @@ def encode_rollouts(rollout_buffer):
     return out_buffer
 
 
-def get_agent(para_space, para_num_layers, device=torch.device('cpu')):
-    return Agent(para_space, para_num_layers, device)
+def get_agent(para_space, para_num_layers, batch_size=5,
+              device=torch.device('cpu')):
+    return Agent(para_space, para_num_layers, batch_size, device)
 
 
 if __name__ == '__main__':

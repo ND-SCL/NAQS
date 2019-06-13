@@ -43,7 +43,7 @@ def controller_bench(space, num_layers, device=torch.device('cpu')):
     best_paras = []
     best_reward = -100000
     start = time.time()
-    agent = ctrl.get_agent(space, num_layers, device)
+    agent = ctrl.get_agent(space, num_layers, batch_size, device)
     target = get_target(space, num_layers)
     for e in range(max_epochs):
         for i in range(batch_size):
@@ -60,8 +60,8 @@ def controller_bench(space, num_layers, device=torch.device('cpu')):
                 # print(best_rollout, best_paras)
             print("action: {}, reward: {}".format(rollout, reward))
             agent.store_rollout(rollout, reward)
-        E = agent.train_step()
-        print("epoch {}, E: {}".format(e, E))
+        # E = agent.train_step()
+        print("epoch {}".format(e))
         print(f"best rollout {best_rollout}, " +
               f"best architecture: {best_paras}, " +
               f"best reward: {best_reward}")
@@ -73,4 +73,3 @@ if __name__ == '__main__':
     seed = 0
     torch.manual_seed(seed)
     random.seed(seed)
-
