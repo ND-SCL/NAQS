@@ -14,3 +14,6 @@ architecture episodes: 			 1000
 early stop: 				 False
 ====================Start exploring architecture space====================
 Sample Architecture ID: 1, Sampled actions: [[], 2, 1, 1, 2, 3, 1]
+Architecture Reward: 0.9825, Elasped time: 873.3611330986023, Average time: 873.3611330986023
+Best Reward: 0.9825, ID: 1, Rollout: [[], 2, 1, 1, 2, 3, 1]
+Sample Architecture ID: 2, Sampled actions: [[], 0, 3, 0, 2, 3, 1]

@@ -10,12 +10,12 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
             loss, acc = epoch_fit(model, train_data, optimizer)
             if verbose:
                 print(f"Epoch {epoch+1:3d}/{epochs}, " +
-                      f"Train Loss: {loss}, Train Acc: {acc:6.3%}", end='')
+                      f"Train Loss: {loss:.5}, Train Acc: {acc:6.3%}", end='')
         if val_data is not None:
             with torch.no_grad():
                 loss, acc = epoch_fit(model, val_data, quan_paras=quan_paras)
             if verbose:
-                print(f" Val Loss: {loss}, Val Acc: {acc:6.3%}")
+                print(f" Val Loss: {loss:.5}, Val Acc: {acc:6.3%}")
             val_acc.append(acc)
             if early_stop and is_convergence(val_acc):
                 break
