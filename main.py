@@ -9,7 +9,7 @@ import torch
 import backend
 import child
 import data
-import controller_nl as ctrl
+from controller import Agent
 from config import ARCH_SPACE, QUAN_SPACE
 from utility import BestSamples
 
@@ -52,6 +52,11 @@ parser.add_argument(
     help="the batch size used to load traning data"
     )
 parser.add_argument(
+    '-k', '--skip',
+    action='store_true',
+    help="include skip connection in the architecture, default is true"
+    )
+parser.add_argument(
     '-s', '--shuffle',
     action='store_true',
     help="shuffle the training data"
@@ -89,6 +94,7 @@ def main():
     print(f"using device {device}")
     dir = os.path.join(
         'experiment',
+        'non_linear' if args.skip else 'linear',
         args.dataset + f"({args.layers} layers)"
         )
     if os.path.exists(dir) is False:
@@ -103,7 +109,7 @@ def nas(device, dir='experiment'):
     train_data, val_data = data.get_data(
         args.dataset, device, shuffle=args.shuffle, batch_size=args.batch_size)
     input_shape, num_classes = data.get_info(args.dataset)
-    agent = ctrl.get_agent(ARCH_SPACE, args.layers, batch_size, device)
+    agent = Agent(ARCH_SPACE, args.layers, batch_size, device, args.skip)
     filepath = os.path.join(dir, f"nas ({args.episodes} episodes)")
     logger = get_logger(filepath)
     csvfile = open(filepath+'.csv', mode='w+', newline='')
@@ -115,6 +121,7 @@ def nas(device, dir='experiment'):
     logger.info(f"architecture space: ")
     for name, value in ARCH_SPACE.items():
         logger.info(name + f": \t\t\t\t {value}")
+    logger.info(f"skip connection: \t\t\t {args.skip}")
     logger.info(f"architecture episodes: \t\t\t {args.episodes}")
     logger.info(f"shuffle: \t\t\t\t {args.shuffle}")
     logger.info(f"early stop: \t\t\t\t {args.early_stop}")
@@ -171,7 +178,7 @@ SCRIPT = {
 
 if __name__ == '__main__':
     import random
-    seed = 0
+    seed = 2
     torch.manual_seed(seed)
     random.seed(seed)
     main()

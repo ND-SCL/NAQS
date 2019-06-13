@@ -2,18 +2,19 @@ import random
 import time
 import torch
 
-import controller_nl as ctrl
+import controller as ctrl
 
 
-def get_target(para_space, num_layers):
+def get_target(para_space, num_layers, skip=True):
     _, para_values = zip(*para_space.items())
     num_choices = [len(v) for v in para_values]
     target = []
     for i in range(num_layers):
-        target_anchor = []
-        for j in range(i):
-            target_anchor.append(random.randint(0, 1))
-        target.append(target_anchor)
+        if skip:
+            target_anchor = []
+            for j in range(i):
+                target_anchor.append(random.randint(0, 1))
+            target.append(target_anchor)
         for v in num_choices:
             target.append(random.randint(0, v-1))
     return target
@@ -24,7 +25,7 @@ def get_reward(rollout, target):
     for r, t in zip(rollout, target):
         if type(r) is list:
             for rr, tt in zip(r, t):
-                error += abs(rr != tt) + random.normalvariate(0, 0.2)
+                error += abs(rr != tt) + random.normalvariate(0, 0.0)
         else:
             error += abs(r != t)
     max_error = 0
@@ -36,15 +37,15 @@ def get_reward(rollout, target):
     return (max_error-error)/max_error
 
 
-def controller_bench(space, num_layers, device=torch.device('cpu')):
+def controller_bench(space, num_layers, device=torch.device('cpu'), skip=True):
     batch_size = 5
     max_epochs = 200
     best_rollout = []
     best_paras = []
     best_reward = -100000
     start = time.time()
-    agent = ctrl.get_agent(space, num_layers, batch_size, device)
-    target = get_target(space, num_layers)
+    agent = ctrl.Agent(space, num_layers, batch_size, device, skip)
+    target = get_target(space, num_layers, skip)
     for e in range(max_epochs):
         for i in range(batch_size):
             rollout, paras = agent.rollout()
