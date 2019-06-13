@@ -52,7 +52,7 @@ parser.add_argument(
     )
 parser.add_argument(
     '-v', '--verbose',
-    action='store_true',
+    action='store_false',
     help="Verbose or succint"
     )
 args = parser.parse_args()
@@ -75,6 +75,7 @@ def get_logger(filepath=None):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"using device {device}")
     dir = os.path.join(
         'experiment',
         args.dataset + f"({args.layers} layers)"
@@ -100,9 +101,9 @@ def nas(device, dir='experiment'):
     logger.info(f"dataset: \t\t\t\t {args.dataset}")
     logger.info(f"number of child network layers: \t {args.layers}")
     logger.info(f"architecture spacce: \n")
-    for name, value in ARCH_SPACE.item():
-        logger.info(name + f": \t\t\t\t\t {value}")
-    logger.info(f"architecture episodes: \t\t\t {args.episodes}")
+    for name, value in ARCH_SPACE.items():
+        logger.info(name + f": \t\t\t\t {value}")
+    logger.info(f"architecture episodes: \t\t\t\t {args.episodes}")
     logger.info(f"early stop: \t\t\t {args.early_stop}")
     writer.writerow(["ID"] +
                     ["Layer {}".format(i) for i in range(args.layers)] +

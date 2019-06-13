@@ -1,2 +1,1 @@
 ID,Layer 0,Accuracy,Time
-1,"{'anchor_point': [], 'filter_height': 1, 'filter_width': 7, 'stride_height': 3, 'stride_width': 2, 'num_filters': 8, 'pool_size': 2}",0.911,330.39653992652893
