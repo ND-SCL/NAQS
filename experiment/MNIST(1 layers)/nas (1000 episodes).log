@@ -4,13 +4,13 @@ dataset: 				 MNIST
 number of child network layers: 	 1
 architecture spacce: 
 
-filter_height: 					 (1, 3, 5, 7)
-filter_width: 					 (1, 3, 5, 7)
-stride_height: 					 (1, 2, 3)
-stride_width: 					 (1, 2, 3)
-num_filters: 					 (24, 36, 48, 64)
-pool_size: 					 (1, 2)
+filter_height: 				 (1, 3, 5, 7)
+filter_width: 				 (1, 3, 5, 7)
+stride_height: 				 (1, 2, 3)
+stride_width: 				 (1, 2, 3)
+num_filters: 				 (24, 36, 48, 64)
+pool_size: 				 (1, 2)
 architecture episodes: 			 1000
-early stop: 			 False
+early stop: 				 False
 ====================Start exploring architecture space====================
 Sample Architecture ID: 1, Sampled actions: [[], 2, 1, 1, 2, 3, 1]

@@ -46,7 +46,18 @@ parser.add_argument(
     help="the number of episodes for training the policy network"
     )
 parser.add_argument(
-    '-s', '--early_stop',
+    '-b', '--batch_size',
+    type=int,
+    default=64,
+    help="the batch size used to load traning data"
+    )
+parser.add_argument(
+    '-s', '--shuffle',
+    action='store_true',
+    help="shuffle the training data"
+    )
+parser.add_argument(
+    '-r', '--early_stop',
     action='store_true',
     help="the total epochs for model fitting"
     )
@@ -85,11 +96,12 @@ def main():
     SCRIPT[args.mode](device, dir)
 
 
-batch_size = 5
+batch_size = 5  # batch size for training agent
 
 
 def nas(device, dir='experiment'):
-    train_data, val_data = data.get_data(args.dataset, device)
+    train_data, val_data = data.get_data(
+        args.dataset, device, shuffle=args.shuffle, batch_size=args.batch_size)
     input_shape, num_classes = data.get_info(args.dataset)
     agent = ctrl.get_agent(ARCH_SPACE, args.layers, batch_size, device)
     filepath = os.path.join(dir, f"nas ({args.episodes} episodes)")
@@ -103,8 +115,8 @@ def nas(device, dir='experiment'):
     logger.info(f"architecture spacce: \n")
     for name, value in ARCH_SPACE.items():
         logger.info(name + f": \t\t\t\t {value}")
-    logger.info(f"architecture episodes: \t\t\t\t {args.episodes}")
-    logger.info(f"early stop: \t\t\t {args.early_stop}")
+    logger.info(f"architecture episodes: \t\t\t {args.episodes}")
+    logger.info(f"early stop: \t\t\t\t {args.early_stop}")
     writer.writerow(["ID"] +
                     ["Layer {}".format(i) for i in range(args.layers)] +
                     ["Accuracy", "Time"]

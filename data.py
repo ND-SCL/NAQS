@@ -4,7 +4,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 
-def get_mnist():
+def get_mnist(shuffle=True, batch_size=64):
     mnist_transform = transforms.Compose([
         transforms.ToTensor()])
     trainloader = DataLoader(
@@ -14,8 +14,8 @@ def get_mnist():
             download=True,
             transform=mnist_transform
         ),
-        batch_size=64,
-        shuffle=True,
+        batch_size=batch_size,
+        shuffle=shuffle,
         num_workers=2
     )
     valloader = DataLoader(
@@ -25,14 +25,14 @@ def get_mnist():
             download=True,
             transform=mnist_transform
         ),
-        batch_size=64,
+        batch_size=batch_size,
         shuffle=False,
         num_workers=2
     )
     return trainloader, valloader
 
 
-def get_cifar10():
+def get_cifar10(shuffle=True, batch_size=64):
     cifar10_transform = transforms.Compose([
         transforms.ToTensor()])
     trainloader = DataLoader(
@@ -42,8 +42,8 @@ def get_cifar10():
             download=True,
             transform=cifar10_transform
         ),
-        batch_size=64,
-        shuffle=True,
+        batch_size=batch_size,
+        shuffle=shuffle,
         num_workers=2
     )
     valloader = DataLoader(
@@ -53,7 +53,7 @@ def get_cifar10():
             download=True,
             transform=cifar10_transform
         ),
-        batch_size=64,
+        batch_size=batch_size,
         shuffle=False,
         num_workers=2
     )
@@ -116,8 +116,9 @@ class WrappedDataLoader:
             yield [v.to(self.device) for v in b]
 
 
-def get_data(name='MNIST', device=torch.device('cpu')):
-    trainloader, valloader = DATA[name]['generator']()
+def get_data(name='MNIST', device=torch.device('cpu'), shuffle=True,
+             batch_size=64):
+    trainloader, valloader = DATA[name]['generator'](shuffle, batch_size)
     # return dataloader
     return WrappedDataLoader(trainloader, device), \
         WrappedDataLoader(valloader, device)
