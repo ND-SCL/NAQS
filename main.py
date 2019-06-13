@@ -48,7 +48,7 @@ parser.add_argument(
 parser.add_argument(
     '-b', '--batch_size',
     type=int,
-    default=64,
+    default=128,
     help="the batch size used to load traning data"
     )
 parser.add_argument(
@@ -63,7 +63,7 @@ parser.add_argument(
     )
 parser.add_argument(
     '-v', '--verbose',
-    action='store_false',
+    action='store_true',
     help="Verbose or succint"
     )
 args = parser.parse_args()
@@ -112,11 +112,13 @@ def nas(device, dir='experiment'):
     logger.info(f"mode: \t\t\t\t\t {'nas'}")
     logger.info(f"dataset: \t\t\t\t {args.dataset}")
     logger.info(f"number of child network layers: \t {args.layers}")
-    logger.info(f"architecture spacce: \n")
+    logger.info(f"architecture space: ")
     for name, value in ARCH_SPACE.items():
         logger.info(name + f": \t\t\t\t {value}")
     logger.info(f"architecture episodes: \t\t\t {args.episodes}")
+    logger.info(f"shuffle: \t\t\t\t {args.shuffle}")
     logger.info(f"early stop: \t\t\t\t {args.early_stop}")
+    logger.info(f"verbose: \t\t\t\t {args.verbose}")
     writer.writerow(["ID"] +
                     ["Layer {}".format(i) for i in range(args.layers)] +
                     ["Accuracy", "Time"]

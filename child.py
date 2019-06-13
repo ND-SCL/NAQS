@@ -54,6 +54,7 @@ def build_graph(input_shape, arch_paras):
                 for i in range(cell_id):
                     if graph[i].used is False:
                         anchor_point[i] = 1
+                        # graph[i].used = True
             for l in range(len(anchor_point)):
                 if anchor_point[l] == 1:
                     graph[l].used = True
@@ -322,3 +323,11 @@ if __name__ == '__main__':
     graph = model.graph
     for cell in graph:
         print(cell)
+    input = torch.randn(1, *input_shape)
+    output = model(input, None)
+    loss = output.sum()-1
+    # loss.backward()
+    for p in model.parameters():
+        if p.grad is None:
+            print('!')
+            break
