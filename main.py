@@ -50,6 +50,11 @@ parser.add_argument(
     action='store_true',
     help="the total epochs for model fitting"
     )
+parser.add_argument(
+    '-v', '--verbose',
+    action='store_true',
+    help="Verbose or succint"
+    )
 args = parser.parse_args()
 
 
@@ -94,7 +99,11 @@ def nas(device, dir='experiment'):
     logger.info(f"mode: \t\t\t\t\t {'nas'}")
     logger.info(f"dataset: \t\t\t\t {args.dataset}")
     logger.info(f"number of child network layers: \t {args.layers}")
+    logger.info(f"architecture spacce: \n")
+    for name, value in ARCH_SPACE.item():
+        logger.info(name + f": \t\t\t\t\t {value}")
     logger.info(f"architecture episodes: \t\t\t {args.episodes}")
+    logger.info(f"early stop: \t\t\t {args.early_stop}")
     writer.writerow(["ID"] +
                     ["Layer {}".format(i) for i in range(args.layers)] +
                     ["Accuracy", "Time"]
@@ -116,6 +125,7 @@ def nas(device, dir='experiment'):
             model, optimizer,
             train_data, val_data,
             epochs=args.epochs,
+            verbose=args.verbose,
             early_stop=args.early_stop
             )
         agent.store_rollout(arch_rollout, arch_reward)

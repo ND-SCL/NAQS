@@ -15,7 +15,7 @@ class MnistNet(nn.Module):
             )
         self.fc = nn.Linear(8 * 28 * 28, num_classes)
 
-    def forward(self, x):
+    def forward(self, x, quan_paras):
         x = F.relu(self.conv(x))
         return self.fc(x.view(x.shape[0], -1))
 
@@ -34,4 +34,4 @@ def get_model(device=torch.device('cpu')):
 
 
 if __name__ == '__main__':
-    from backend import trainer
+    pass

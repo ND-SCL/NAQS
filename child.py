@@ -304,7 +304,7 @@ if __name__ == '__main__':
     random.seed(seed)
     torch.manual_seed(seed)
 
-    num_layers = 6
+    num_layers = 10
     agent = controller_nl.Agent(ARCH_SPACE, num_layers)
     rollout, paras = agent.rollout()
     input_shape = (3, 32, 32)
