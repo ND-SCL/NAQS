@@ -284,7 +284,7 @@ def get_model(input_shape, paras, num_classes,
     # )
     optimizer = optim.SGD(
         model.parameters(),
-        lr=lr,
+        lr=0.01,
         momentum=0.9,
         weight_decay=1e-4,
         nesterov=True)

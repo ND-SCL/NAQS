@@ -85,6 +85,8 @@ if __name__ == '__main__':
     import backend
     import time
 
+    torch.manual_seed(0)
+
     dataset = 'CIFAR10'
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, val_data = data.get_data(
