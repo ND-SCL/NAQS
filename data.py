@@ -32,9 +32,19 @@ def get_mnist(shuffle=True, batch_size=64):
     return trainloader, valloader
 
 
-def get_cifar10(shuffle=True, batch_size=64):
-    cifar10_transform = transforms.Compose([
-        transforms.ToTensor()])
+def get_cifar10(shuffle=True, batch_size=64, augment=False):
+    if augment:
+        cifar10_transform = transforms.Compose([
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+                )
+            ])
+    else:
+        cifar10_transform = transforms.Compose([
+            transforms.ToTensor()
+            ])
     trainloader = DataLoader(
         datasets.CIFAR10(
             root='./data/CIFAR10',

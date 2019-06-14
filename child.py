@@ -276,7 +276,7 @@ def get_model(input_shape, paras, num_classes,
     model = CNN(input_shape, paras, num_classes).to(device)
     optimizer = optim.Adam(
         model.parameters(),
-        lr=1e-4,
+        lr=lr,
         betas=(0.9, 0.999),
         eps=1e-8,
         weight_decay=0.0,

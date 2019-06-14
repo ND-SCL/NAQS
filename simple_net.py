@@ -88,6 +88,14 @@ if __name__ == '__main__':
         momentum=0.9,
         weight_decay=1e-4,
         nesterov=True)
+    optimizer = optim.Adam(
+        model.parameters(),
+        lr=0.001,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+        weight_decay=0.0,
+        amsgrad=True
+    )
     start = time.time()
     backend.fit(
         model, optimizer,
