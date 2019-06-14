@@ -91,7 +91,7 @@ if __name__ == '__main__':
         dataset, device, shuffle=True, batch_size=128)
     input_shape, num_classes = data.get_info(dataset)
     model, optimizer = child.get_model(
-            input_shape, NAS15, num_classes, device
+            input_shape, SIMPLE, num_classes, device
             )
     print(model.graph)
     start = time.time()
