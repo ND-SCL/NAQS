@@ -92,11 +92,11 @@ if __name__ == '__main__':
     model, optimizer = child.get_model(
             input_shape, NAS15, num_classes, device
             )
-    print(model.graph)
-    # backend.fit(
-    #     model, optimizer,
-    #     train_data, val_data,
-    #     epochs=40,
-    #     verbose=True,
-    #     early_stop=False
-    #     )
+    # print(model.graph)
+    backend.fit(
+        model, optimizer,
+        train_data, val_data,
+        epochs=40,
+        verbose=True,
+        early_stop=False
+        )
