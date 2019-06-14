@@ -84,7 +84,7 @@ if __name__ == '__main__':
     model = SimpleNet().to(device)
     optimizer = optim.SGD(
         model.parameters(),
-        lr=0.001,
+        lr=0.01,
         momentum=0.9,
         weight_decay=1e-4,
         nesterov=True)
