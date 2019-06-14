@@ -281,4 +281,4 @@ if __name__ == '__main__':
     from config import ARCH_SPACE
     from controller_bench import controller_bench
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    controller_bench(ARCH_SPACE, 4, device)
+    controller_bench(ARCH_SPACE, 12, device, epochs=1000)

@@ -37,9 +37,10 @@ def get_reward(rollout, target):
     return (max_error-error)/max_error
 
 
-def controller_bench(space, num_layers, device=torch.device('cpu'), skip=True):
+def controller_bench(space, num_layers, device=torch.device('cpu'), skip=True,
+                     epochs=200):
     batch_size = 5
-    max_epochs = 200
+    max_epochs = epochs
     best_rollout = []
     best_paras = []
     best_reward = -100000

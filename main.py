@@ -56,11 +56,11 @@ parser.add_argument(
     action='store_true',
     help="include skip connection in the architecture, default is true"
     )
-parser.add_argument(
-    '-s', '--shuffle',
-    action='store_true',
-    help="shuffle the training data"
-    )
+# parser.add_argument(
+#     '-s', '--shuffle',
+#     action='store_true',
+#     help="shuffle the training data"
+#     )
 parser.add_argument(
     '-r', '--early_stop',
     action='store_true',
@@ -107,7 +107,7 @@ batch_size = 5  # batch size for training agent
 
 def nas(device, dir='experiment'):
     train_data, val_data = data.get_data(
-        args.dataset, device, shuffle=args.shuffle, batch_size=args.batch_size)
+        args.dataset, device, shuffle=True, batch_size=args.batch_size)
     input_shape, num_classes = data.get_info(args.dataset)
     agent = Agent(ARCH_SPACE, args.layers, batch_size, device, args.skip)
     filepath = os.path.join(dir, f"nas ({args.episodes} episodes)")
@@ -123,7 +123,7 @@ def nas(device, dir='experiment'):
         logger.info(name + f": \t\t\t\t {value}")
     logger.info(f"skip connection: \t\t\t {args.skip}")
     logger.info(f"architecture episodes: \t\t\t {args.episodes}")
-    logger.info(f"shuffle: \t\t\t\t {args.shuffle}")
+    # logger.info(f"shuffle: \t\t\t\t {args.shuffle}")
     logger.info(f"early stop: \t\t\t\t {args.early_stop}")
     logger.info(f"verbose: \t\t\t\t {args.verbose}")
     writer.writerow(["ID"] +

@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -7,19 +8,20 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
     val_acc = []
     for epoch in range(epochs):
         if train_data is not None:
-            loss, acc = epoch_fit(model, train_data, optimizer)
+            loss, train_acc = epoch_fit(model, train_data, optimizer)
             if verbose:
                 print(f"Epoch {epoch+1:3d}/{epochs}, " +
-                      f"Train Loss: {loss:.5}, Train Acc: {acc:6.3%}", end='')
+                      f"Train Loss: {loss:.5}, ",
+                      f"Train Acc: {train_acc:6.3%}", end='')
         if val_data is not None:
             with torch.no_grad():
                 loss, acc = epoch_fit(model, val_data, quan_paras=quan_paras)
             if verbose:
                 print(f" Val Loss: {loss:.5}, Val Acc: {acc:6.3%}")
             val_acc.append(acc)
-            if early_stop and is_convergence(val_acc):
+            if early_stop and (train_acc-acc>0.02) and is_convergence(val_acc):
                 break
-    return val_acc[-1]
+    return np.mean(val_acc[-5:])
 
 
 def epoch_fit(model, data, optimizer=None, quan_paras=None):
@@ -39,10 +41,8 @@ def epoch_fit(model, data, optimizer=None, quan_paras=None):
 
 def batch_fit(model, input_batch, label_batch, optimizer=None,
               quan_paras=None):
-    # print(quan_paras)
     output_batch = model(input_batch, quan_paras)
     _, prediction = torch.max(output_batch, 1)
-    # print(prediction.shape, label_batch.shape)
     loss = F.cross_entropy(output_batch, label_batch)
     correction = (prediction == label_batch).sum()
     if optimizer is not None:

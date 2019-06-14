@@ -42,9 +42,12 @@ def build_graph(input_shape, arch_paras):
         num_filters = layer_paras['num_filters']
         filter_height = layer_paras['filter_height']
         filter_width = layer_paras['filter_width']
-        stride_height = layer_paras['stride_height']
-        stride_width = layer_paras['stride_width']
-        pool_size = layer_paras['pool_size']
+        stride_height = layer_paras['stride_height'] \
+            if 'stride_height' in layer_paras else 1
+        stride_width = layer_paras['stride_width'] \
+            if 'stride_width' in layer_paras else 1
+        pool_size = layer_paras['pool_size'] \
+            if 'pool_size' in layer_paras else 1
         pool_stride = pool_size
         if 'anchor_point' in layer_paras:
             anchor_point = layer_paras['anchor_point']
