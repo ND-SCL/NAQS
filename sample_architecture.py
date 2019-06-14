@@ -83,6 +83,7 @@ if __name__ == '__main__':
     import data
     import child
     import backend
+    import time
 
     dataset = 'CIFAR10'
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -90,13 +91,16 @@ if __name__ == '__main__':
         dataset, device, shuffle=True, batch_size=128)
     input_shape, num_classes = data.get_info(dataset)
     model, optimizer = child.get_model(
-            input_shape, NAS15, num_classes, device
+            input_shape, SIMPLE, num_classes, device
             )
-    # print(model.graph)
+    print(model.graph)
+    start = time.time()
     backend.fit(
         model, optimizer,
         train_data, val_data,
-        epochs=40,
+        epochs=10,
         verbose=True,
         early_stop=False
         )
+    end = time.time()
+    print(end-start)
