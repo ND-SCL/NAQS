@@ -90,6 +90,8 @@ if __name__ == '__main__':
     train_data, val_data = data.get_data(
         dataset, device, shuffle=True, batch_size=128)
     input_shape, num_classes = data.get_info(dataset)
+    for c in SIMPLE:
+        c.remove('anchor_point')
     model, optimizer = child.get_model(
             input_shape, SIMPLE, num_classes, device
             )
