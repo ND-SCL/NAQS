@@ -92,7 +92,7 @@ if __name__ == '__main__':
     backend.fit(
         model, optimizer,
         train_data, val_data,
-        epochs=10,
+        epochs=40,
         verbose=True,
         early_stop=False
         )
