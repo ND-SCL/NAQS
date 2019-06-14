@@ -65,17 +65,17 @@ NAS15 = [
 
 SIMPLE = [
     {'num_filters': 32, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 1},
+     'pool_size': 1, 'anchor_point': []},
     {'num_filters': 32, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 2},
+     'pool_size': 2, 'anchor_point': [1]},
     {'num_filters': 64, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 1},
+     'pool_size': 1, 'anchor_point': [0, 1]},
     {'num_filters': 64, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 2},
+     'pool_size': 2, 'anchor_point': [0, 0, 1]},
     {'num_filters': 128, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 1},
+     'pool_size': 1, 'anchor_point': [0, 0, 0, 1]},
     {'num_filters': 128, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 2}]
+     'pool_size': 2, 'anchor_point': [0, 0, 0, 0, 1]}]
 
 
 if __name__ == '__main__':
