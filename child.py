@@ -287,16 +287,22 @@ def quantize(x, num_int_bits, num_frac_bits, sign=True):
 
 
 def get_model(input_shape, paras, num_classes,
-              device=torch.device('cpu')):
+              device=torch.device('cpu'), lr=0.001):
     model = CNN(input_shape, paras, num_classes).to(device)
-    optimizer = optim.Adam(
+    # optimizer = optim.Adam(
+    #     model.parameters(),
+    #     lr=1e-3,
+    #     betas=(0.9, 0.999),
+    #     eps=1e-8,
+    #     weight_decay=0.0,
+    #     amsgrad=True
+    # )
+    optimizer = optim.SGD(
         model.parameters(),
-        lr=1e-3,
-        betas=(0.9, 0.999),
-        eps=1e-8,
-        weight_decay=0.0,
-        amsgrad=True
-    )
+        lr=lr,
+        momentum=0.9,
+        weight_decay=1e-4,
+        nesterov=True)
     return model, optimizer
 
 
