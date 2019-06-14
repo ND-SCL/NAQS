@@ -30,7 +30,7 @@ class Cell():
             f"conv: {self.conv} " + \
             f"pool: {self.pool} " + \
             f"drop: {self.drop} " + \
-            f"used: {self.used}"
+            f"used: {self.used}\n"
 
 
 def build_graph(input_shape, arch_paras):
