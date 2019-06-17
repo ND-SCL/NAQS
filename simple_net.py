@@ -73,7 +73,7 @@ class SimpleNet(nn.Module):
 
 if __name__ == '__main__':
     import data
-    import backend
+    import backend_pytorch as backend
     import time
 
     dataset = 'CIFAR10'
@@ -82,20 +82,23 @@ if __name__ == '__main__':
         dataset, device, shuffle=True, batch_size=128)
     input_shape, num_classes = data.get_info(dataset)
     model = SimpleNet().to(device)
+    if device.type == 'cuda':
+        print("using parallel data")
+        model = torch.nn.DataParallel(model)
     optimizer = optim.SGD(
         model.parameters(),
         lr=0.01,
         momentum=0.9,
         weight_decay=1e-4,
         nesterov=True)
-    optimizer = optim.Adam(
-        model.parameters(),
-        lr=0.001,
-        betas=(0.9, 0.999),
-        eps=1e-8,
-        weight_decay=0.0,
-        amsgrad=True
-    )
+    # optimizer = optim.Adam(
+    #     model.parameters(),
+    #     lr=0.001,
+    #     betas=(0.9, 0.999),
+    #     eps=1e-8,
+    #     weight_decay=0.0,
+    #     amsgrad=True
+    # )
     start = time.time()
     backend.fit(
         model, optimizer,

@@ -4,7 +4,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 
-def get_mnist(shuffle=True, batch_size=64):
+def get_mnist(shuffle=True, batch_size=64, augment=False):
     mnist_transform = transforms.Compose([
         transforms.ToTensor()])
     trainloader = DataLoader(
@@ -33,24 +33,27 @@ def get_mnist(shuffle=True, batch_size=64):
 
 
 def get_cifar10(shuffle=True, batch_size=64, augment=False):
-    if augment:
-        cifar10_transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(
+    plain_transform = [
+        transforms.ToTensor(),
+        transforms.Normalize(
                 (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
-                )
-            ])
+                )]
+    if augment:
+        transform = [
+            transforms.RandomHorizontalFlip(),
+            plain_transform[0],
+            plain_transform[1]
+            ]
+        train_transform = transforms.Compose(transform)
     else:
-        cifar10_transform = transforms.Compose([
-            transforms.ToTensor()
-            ])
+        train_transform = transforms.Compose(plain_transform)
+    val_transform = transforms.Compose(plain_transform)
     trainloader = DataLoader(
         datasets.CIFAR10(
             root='./data/CIFAR10',
             train=True,
             download=True,
-            transform=cifar10_transform
+            transform=train_transform
         ),
         batch_size=batch_size,
         shuffle=shuffle,
@@ -61,7 +64,7 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
             root='./data/CIFAR10',
             train=False,
             download=True,
-            transform=cifar10_transform
+            transform=val_transform
         ),
         batch_size=batch_size,
         shuffle=False,
@@ -127,8 +130,9 @@ class WrappedDataLoader:
 
 
 def get_data(name='MNIST', device=torch.device('cpu'), shuffle=True,
-             batch_size=64):
-    trainloader, valloader = DATA[name]['generator'](shuffle, batch_size)
+             batch_size=64, augment=False):
+    trainloader, valloader = DATA[name]['generator'](
+        shuffle, batch_size, augment=augment)
     # return dataloader
     return WrappedDataLoader(trainloader, device), \
         WrappedDataLoader(valloader, device)

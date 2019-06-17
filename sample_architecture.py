@@ -31,7 +31,7 @@ CIFAR10_6[3] = [
     {'num_filters': 128, 'filter_height': 3, 'filter_width': 3, 'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
     {'num_filters': 96, 'filter_height': 3, 'filter_width': 7, 'stride_height': 1, 'stride_width': 2, 'pool_size': 1}]
 
-NAS15 = [
+nas15 = [
     {'filter_height': 3, 'filter_width': 3, 'num_filters': 36,  # 0
      'anchor_point': []},
     {'filter_height': 3, 'filter_width': 3, 'num_filters': 48,  # 1
@@ -84,6 +84,8 @@ if __name__ == '__main__':
     import child
     import backend
     import time
+    # import NAS15
+    import torch.optim as optim
 
     torch.manual_seed(0)
 
@@ -94,17 +96,38 @@ if __name__ == '__main__':
     input_shape, num_classes = data.get_info(dataset)
     for c in SIMPLE:
         c.pop('anchor_point')
+    arch_paras = [{'num_filters': 32, 'filter_height': 3, 'filter_width': 3,
+             'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
+             {'num_filters': 128, 'filter_height': 3, 'filter_width': 5,
+              'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
+             {'num_filters': 64, 'filter_height': 3, 'filter_width': 3,
+              'stride_height': 1, 'stride_width': 1, 'pool_size': 2},
+             {'num_filters': 96, 'filter_height': 5, 'filter_width': 5,
+              'stride_height': 1, 'stride_width': 1, 'pool_size': 2},
+             {'num_filters': 128, 'filter_height': 3, 'filter_width': 7,
+              'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
+             {'num_filters': 64, 'filter_height': 3, 'filter_width': 7,
+              'stride_height': 1, 'stride_width': 2, 'pool_size': 1}]
     model, optimizer = child.get_model(
-            input_shape, SIMPLE, num_classes, device
+            input_shape, nas15, num_classes, device
             )
-    print(model.graph)
+    # print(model.graph)
+    quan_paras = []
+    for l in range(len(arch_paras)):
+        layer = {}
+        layer['act_num_int_bits'] = 7
+        layer['act_num_frac_bits'] = 7
+        layer['weight_num_int_bits'] = 7
+        layer['weight_num_frac_bits'] = 7
+        quan_paras.append(layer)
     start = time.time()
     backend.fit(
         model, optimizer,
         train_data, val_data,
         epochs=40,
         verbose=True,
-        early_stop=False
+        early_stop=False,
+        quan_paras=None
         )
     end = time.time()
     print(end-start)
