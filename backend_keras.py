@@ -41,27 +41,24 @@ class QuanLayer(tf.keras.layers.Layer):
 
 
 def get_cifar10(percentage=1):
-    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
+    (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
     num_samples = int(len(x_train) * percentage)
     x_train = x_train[:num_samples]
     y_train = y_train[:num_samples]
     num_samples = int(len(x_test) * percentage)
     x_test = x_test[:num_samples]
     y_test = y_test[:num_samples]
-
     x_train.astype('float32')
     x_train = x_train / 255
     x_test.astype('float32')
     x_test = x_test / 255
-
     y_train = tf.keras.utils.to_categorical(y_train, num_classes=10)
     y_test = tf.keras.utils.to_categorical(y_test, num_classes=10)
-
-    # split_index = int(0.9 * len(x_train))
-    # train_images, valid_images = x_train[:split_index], x_train[split_index:]
-    # train_labels, valid_labels = y_train[:split_index], y_train[split_index:]
     train_images, train_labels = x_train, y_train
     val_images, val_labels = x_test, y_test
+    mean, std = (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+    train_images = normalize(train_images, mean, std)
+    val_images = normalize(val_images, mean, std)
     return (train_images, train_labels), (val_images, val_labels)
 
 
@@ -133,6 +130,15 @@ def validator(model, verbosity=0):
 
 def get_info(dataset='CIFAR10'):
     return (32, 32, 3), 10
+
+
+def normalize(batch, mean, std):
+    for i in range(len(mean)):
+        print(i)
+        if std[i] == 0:
+            std[i] = 1e-8
+        batch[:, :, :, i] = (batch[:, :, :, i] - mean[i]) / std[i]
+    return batch
 
 
 def get_optimizer(name='SGD'):

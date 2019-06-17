@@ -19,30 +19,31 @@ parser.add_argument(
     '-m', '--mode',
     default='nas',
     choices=['nas', 'joint'],
-    help="supported dataset including : 1. nas, 2. joint"
+    help="supported dataset including : 1. nas (default), 2. joint"
     )
 parser.add_argument(
     '-d', '--dataset',
-    default='MNIST',
-    help="supported dataset including : 1. MNIST, 2. CIFAR10"
+    default='CIFAR10',
+    help="supported dataset including : 1. MNIST, 2. CIFAR10 (default)"
     )
 parser.add_argument(
     '-l', '--layers',
     type=int,
     default=6,
-    help="the number of child network layers"
+    help="the number of child network layers, default is 6"
     )
 parser.add_argument(
     '-e', '--epochs',
     type=int,
     default=30,
-    help="the total epochs for model fitting"
+    help="the total epochs for model fitting, default is 30"
     )
 parser.add_argument(
     '-ep', '--episodes',
     type=int,
     default=1000,
-    help="the number of episodes for training the policy network"
+    help='''the number of episodes for training the policy network, default
+        is 1000'''
     )
 parser.add_argument(
     '-st', '--stride',
@@ -59,13 +60,13 @@ parser.add_argument(
     '-b', '--batch_size',
     type=int,
     default=5,
-    help="the batch size used to train the controller"
+    help="the batch size used to train the controller, default is 5"
     )
 parser.add_argument(
     '-s', '--seed',
     type=int,
     default=1,
-    help="seed for randomness"
+    help="seed for randomness, default is 0"
     )
 parser.add_argument(
     '-k', '--skip',
@@ -75,8 +76,8 @@ parser.add_argument(
 parser.add_argument(
     '-f', '--framework',
     choices=['keras', 'pytorch'],
-    default='keras',
-    help="framewor 'keras' or 'pytorch'")
+    default='pytorch',
+    help="framework 'keras' or 'pytorch (default)'")
 # parser.add_argument(
 #     '-a', '--augment',
 #     action='store_true',
@@ -91,7 +92,8 @@ parser.add_argument(
     '-v', '--verbosity',
     type=int,
     choices=range(3),
-    help="verbosity level: 0, 1 and 2 with 2 being the most verbose"
+    default=0,
+    help="verbosity level: 0 (default), 1 and 2 with 2 being the most verbose"
     )
 args = parser.parse_args()
 
@@ -149,7 +151,7 @@ def nas(device, dir='experiment'):
     logger.info(f"batch size: \t\t\t\t {args.batch_size}")
     logger.info(f"verbosity: \t\t\t\t {args.verbosity}")
     logger.info(f"framework: \t\t\t\t {args.framework}")
-    logger.info(f"include stride: \t\t\t\t {args.stride}")
+    logger.info(f"include stride: \t\t\t {args.stride}")
     logger.info(f"architecture space: ")
     for name, value in ARCH_SPACE.items():
         logger.info(name + f": \t\t\t\t {value}")

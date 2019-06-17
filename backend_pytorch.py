@@ -30,14 +30,14 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
                     model, val_data,
                     quan_paras=quan_paras
                     )
-            if verbosity:
+            if verbosity > 0:
                 print(f" Val Loss: {val_loss:.5} - Val Acc: {val_acc:6.3%}",
                       end=' ')
             if epoch == 10 and val_acc < 0.12:
                 break
             acc.append(val_acc)
             loss.append(val_loss)
-        if verbosity:
+        if verbosity > 0:
             print(f"Elasped time: {timer.sample()}")
     if len(acc) > 4:
         return np.mean(loss[-5:]), np.mean(acc[-5:])  # train and validate
