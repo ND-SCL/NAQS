@@ -134,7 +134,6 @@ def get_info(dataset='CIFAR10'):
 
 def normalize(batch, mean, std):
     for i in range(len(mean)):
-        print(i)
         if std[i] == 0:
             std[i] = 1e-8
         batch[:, :, :, i] = (batch[:, :, :, i] - mean[i]) / std[i]

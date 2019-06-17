@@ -247,7 +247,6 @@ def build_graph(input_shape, arch_paras):
                 for i in range(cell_id):
                     if graph[i].used is False:
                         anchor_point[i] = 1
-                        # graph[i].used = True
             for l in range(len(anchor_point)):
                 if anchor_point[l] == 1:
                     graph[l].used = True
@@ -307,7 +306,6 @@ def build_graph(input_shape, arch_paras):
             right = math.ceil(padding_width/2)
             cell.conv_pad = [None]
         cell.in_channels = in_channels
-
         cell.conv = keras.layers.Conv2D(
                 filters=num_filters,
                 kernel_size=(filter_height, filter_width),
@@ -322,7 +320,6 @@ def build_graph(input_shape, arch_paras):
                     pool_size=(pool_size, pool_size),
                     padding='same',
                     name='pool_{}'.format(cell_id))
-
         padding_height, out_height = compute_padding(
                     out_height,
                     pool_size,
