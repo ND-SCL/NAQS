@@ -266,7 +266,7 @@ def quantize(x, num_int_bits, num_frac_bits, signed=True):
 
 
 def get_model(input_shape, paras, num_classes, device=torch.device('cpu'),
-              multi_gpu=False, lr=0.001):
+              multi_gpu=False):
     graph = build_graph(input_shape, paras)
     model = CNN(graph, num_classes).to(device)
     if device.type == 'cuda' and multi_gpu is True:

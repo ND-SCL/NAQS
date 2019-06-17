@@ -93,7 +93,7 @@ model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['ac
 # for layer in model.layers:
 #     print(layer.input)
 
-history = model.fit_generator(datagen.flow(train_images, train_labels, batch_size=128), 
+history = model.fit_generator(datagen.flow(train_images, train_labels, batch_size=128),
 	steps_per_epoch = int(45000 / 128),
 	epochs = 150, validation_data = (valid_images, valid_labels))
 

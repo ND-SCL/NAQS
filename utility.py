@@ -1,3 +1,30 @@
+import logging
+from config import ARCH_SPACE, QUAN_SPACE
+
+
+def get_logger(filepath=None):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    console_handler.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(console_handler)
+    if filepath is not None:
+        file_handler = logging.FileHandler(filepath+'.log', mode='w')
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(file_handler)
+    return logger
+
+
+def split_paras(paras):
+    num_layers = len(paras)
+    arch_paras = []
+    quan_paras = []
+    for i in range(num_layers):
+        arch_paras.append({k: paras[i][k] for k in ARCH_SPACE})
+        quan_paras.append({k: paras[i][k] for k in QUAN_SPACE})
+    return arch_paras, quan_paras
 
 
 class BestSamples(object):

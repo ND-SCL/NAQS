@@ -166,8 +166,8 @@ def nas(device, dir='experiment'):
                     )
     arch_id = 0
     total_time = 0
-    logger.info('=' * 60 + "Start exploring architecture space" + '=' * 60)
-    logger.info('-' * 180)
+    logger.info('=' * 50 + "Start exploring architecture space" + '=' * 50)
+    logger.info('-' * len("Start exploring architecture space"))
     best_samples = BestSamples(5)
     for e in range(args.episodes):
         arch_id += 1
@@ -197,7 +197,7 @@ def nas(device, dir='experiment'):
         logger.info(f"Best Reward: {best_samples.reward_list[0]}, " +
                     f"ID: {best_samples.id_list[0]}, " +
                     f"Rollout: {best_samples.rollout_list[0]}")
-        logger.info('-' * 180)
+        logger.info('-' * len("Start exploring architecture space"))
     logger.info(
         '=' * 60 + "Architecture sapce exploration finished" + '=' * 60)
     logger.info(f"Total elasped time: {total_time}")
