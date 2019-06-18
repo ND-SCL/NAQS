@@ -31,7 +31,7 @@ CIFAR10_6[3] = [
     {'num_filters': 128, 'filter_height': 3, 'filter_width': 3, 'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
     {'num_filters': 96, 'filter_height': 3, 'filter_width': 7, 'stride_height': 1, 'stride_width': 2, 'pool_size': 1}]
 
-arch_paras = [
+NAS15 = [
     {'filter_height': 3, 'filter_width': 3, 'num_filters': 36,  # 0
      'anchor_point': []},
     {'filter_height': 3, 'filter_width': 3, 'num_filters': 48,  # 1

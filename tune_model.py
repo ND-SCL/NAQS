@@ -38,8 +38,9 @@ lr = 0.01
 
 
 def lr_schedule(optimizer, epoch):
-    new_lr = lr * 0.5 ** (epoch // 20)
+    new_lr = lr if epoch < 100 else lr / 10
     adjust_learning_rate(optimizer, new_lr)
+    return new_lr
 
 
 def adjust_learning_rate(optimizer, lr):
@@ -65,13 +66,70 @@ def tune(paras=[], dataset='CIFAR10'):
         momentum=0.9,
         weight_decay=5e-4,
         nesterov=True)
-    backend.fit(
-        model, optimizer,
-        train_data, val_data,
-        epochs=args.epochs,
-        verbosity=args.verbosity,
-        quan_paras=quan_paras,
-        lr_schedule=lr_schedule)
+    best_acc = 0
+    best_quan_acc = 0
+    for epoch in range(args.epochs):
+        epoch_lr = lr_schedule(optimizer, epoch)
+        print('=' * 80)
+        print(f"Epoch {epoch} \t\t\t\t\t\t\t lr: {epoch_lr}" +
+              f"\t best acc ever: {best_acc:6.3%}" +
+              (f"quantized: {best_quan_acc:6.3%}" if quan_paras is not None
+               else ''))
+        print("Training ...")
+        running_loss, running_correction, running_total = 0, 0, 0
+        for input_batch, label_batch in train_data:
+            batch_loss, batch_correction = backend.batch_fit(
+                model, input_batch, label_batch, optimizer)
+            running_loss += batch_loss
+            running_correction += batch_correction
+            running_total += input_batch.size(0)
+            train_acc = running_correction / running_total
+            train_loss = running_loss / running_total
+            epoch_percentage = running_total / len(train_data)
+            print('\r', '=' * int(100 * epoch_percentage) +
+                  '>' if epoch_percentage < 0.99 else '=' +
+                  f'\t {epoch_percentage*100:.2%}' +
+                  f"loss: {train_loss:.5}, acc: {train_acc:6.3%}",
+                  end='' if epoch_percentage < 0.99 else '\n')
+        print("Training finished, start evaluating ...")
+        for input_batch, label_batch in val_data:
+            running_loss, running_correction, running_total = 0, 0, 0
+            with torch.no_grad():
+                batch_loss, batch_correction = backend.batch_fit(
+                    model, input_batch, label_batch)
+                running_loss += batch_loss
+                running_correction += batch_correction
+                running_total += input_batch.size(0)
+                val_acc = running_correction / running_total
+                val_loss = running_loss / running_total
+                epoch_percentage = running_total / len(train_data)
+                print('\r', '=' * int(100 * epoch_percentage) +
+                      '>' if epoch_percentage < 0.99 else '=' +
+                      f'\t {epoch_percentage:6.3%}' +
+                      f"loss: {val_loss:.5}, acc: {val_acc:6.3%}",
+                      end='' if epoch_percentage < 0.99 else '\n')
+        if val_acc > best_acc:
+            best_acc = val_acc
+        if quan_paras is not None:
+            print("Start evaluating with quantization ...")
+            for input_batch, label_batch in val_data:
+                running_loss, running_correction, running_total = 0, 0, 0
+                with torch.no_grad():
+                    batch_loss, batch_correction = backend.batch_fit(
+                        model, input_batch, label_batch, quan_paras=quan_paras)
+                    running_loss += batch_loss
+                    running_correction += batch_correction
+                    running_total += input_batch.size(0)
+                    val_acc = running_correction / running_total
+                    val_loss = running_loss / running_total
+                    epoch_percentage = running_total / len(train_data)
+                    print('\r', '=' * int(100 * epoch_percentage) +
+                          '>' if epoch_percentage < 0.99 else '=' +
+                          f'\t {epoch_percentage*:6.3%}' +
+                          f"loss: {val_loss:.5}, acc: {val_acc:6.3%}",
+                          end='' if epoch_percentage < 0.99 else '\n')
+            if val_acc > best_quan_acc:
+                best_quan_acc = val_acc
 
 
 if __name__ == '__main__':
