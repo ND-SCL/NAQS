@@ -40,6 +40,7 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
                 )]
     if augment:
         transform = [
+            transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             plain_transform[0],
             plain_transform[1]
