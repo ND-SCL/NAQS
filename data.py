@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+# import torchvision.transforms.functional as TF
 
 
 def get_mnist(shuffle=True, batch_size=64, augment=False):
@@ -9,9 +10,7 @@ def get_mnist(shuffle=True, batch_size=64, augment=False):
         transforms.ToTensor()])
     trainloader = DataLoader(
         datasets.MNIST(
-            root='./data/MNIST',
-            train=True,
-            download=True,
+            root='./data/MNIST', train=True, download=True,
             transform=mnist_transform
         ),
         batch_size=batch_size,
@@ -40,6 +39,8 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
                 )]
     if augment:
         transform = [
+            transforms.Resize(size=(64, 64)),
+            transforms.RandomCrop(32),
             transforms.RandomHorizontalFlip(),
             plain_transform[0],
             plain_transform[1]
