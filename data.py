@@ -34,16 +34,16 @@ def get_mnist(shuffle=True, batch_size=64, augment=False):
 def get_cifar10(shuffle=True, batch_size=64, augment=False):
     plain_transform = [
         transforms.ToTensor(),
-        transforms.Normalize(
-                (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
-                )]
+        # transforms.Normalize(
+        #         (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+        #         )
+        ]
     if augment:
         transform = [
             transforms.Resize(size=(64, 64)),
             transforms.RandomCrop(32),
             transforms.RandomHorizontalFlip(),
-            plain_transform[0],
-            plain_transform[1]
+            plain_transform[0]
             ]
         train_transform = transforms.Compose(transform)
     else:
