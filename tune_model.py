@@ -16,6 +16,11 @@ parser.add_argument(
     help="use more than one gpu, default false"
     )
 parser.add_argument(
+    '-db', '--do_bn',
+    action='store_true',
+    help="use batch normalization, default is false"
+    )
+parser.add_argument(
     '-e', '--epochs',
     type=int,
     default=150,
@@ -37,15 +42,19 @@ args = parser.parse_args()
 
 
 lr = 0.01
-batch_size = 128
+batch_size = 64
 
 
 def lr_schedule(optimizer, epoch):
     new_lr = lr
-    if epoch == 75:
-        new_lr = lr / 10
-    if epoch == 120:
-        new_lr = lr / 100
+    if epoch > 25:
+        new_lr = 0.001
+    if epoch > 50:
+        new_lr = 0.0008
+    if epoch > 75:
+        new_lr = 0.0005
+    if epoch > 100:
+        new_lr = 0.0003
     adjust_learning_rate(optimizer, new_lr)
     return new_lr
 
@@ -66,16 +75,25 @@ def tune(paras=[], dataset='CIFAR10'):
     model = get_model(
         input_shape, arch_paras, num_classes,
         device=device,
-        multi_gpu=args.multi_gpu,)
+        multi_gpu=args.multi_gpu,
+        do_bn=args.do_bn)
     optimizer = optim.SGD(
         model.parameters(),
         lr=lr,
         momentum=0.9,
-        weight_decay=5e-4,
+        weight_decay=1e-4,
         nesterov=True)
+    # optimizer = optim.Adam(
+    #     model.parameters(),
+    #     lr=lr,
+    #     betas=(0.9, 0.999),
+    #     eps=1e-7,
+    #     weight_decay=0,
+    #     amsgrad=False
+    #     )
     best_acc = 0
     best_quan_acc = 0
-    for epoch in range(args.epochs):
+    for epoch in range(1, args.epochs+1):
         epoch_lr = lr_schedule(optimizer, epoch)
         print('-' * 80)
         print(f"Epoch {epoch} \t LR: {epoch_lr}" +
@@ -100,7 +118,7 @@ def tune(paras=[], dataset='CIFAR10'):
                   '>' +
                   ' '*(bar_width - math.ceil(bar_width * epoch_percentage)) +
                   '|' + f"{epoch_percentage:4.1%}-{end-start:4.2f}s" +
-                  f"\t loss: {train_loss:.5}, acc: {train_acc:6.3%}",
+                  f"\t loss: {train_loss:.5}, acc: {train_acc:6.3%}  ",
                   end=('\r' if epoch_percentage < 1 else '\n'))
         print("Training finished, start evaluating ...")
         running_loss, running_correction, running_total = 0, 0, 0
@@ -120,7 +138,7 @@ def tune(paras=[], dataset='CIFAR10'):
                   '>' +
                   ' '*(bar_width - math.ceil(bar_width * epoch_percentage)) +
                   '|' + f"{epoch_percentage:4.1%}-{end-start:4.2f}s" +
-                  f"\t loss: {val_loss:.5}, acc: {val_acc:6.3%}",
+                  f"\t loss: {val_loss:.5}, acc: {val_acc:6.3%}  ",
                   end=('\r' if epoch_percentage < 1 else '\n'))
         if val_acc > best_acc:
             best_acc = val_acc
@@ -143,7 +161,7 @@ def tune(paras=[], dataset='CIFAR10'):
                       '>' + ' '*(bar_width - math.ceil(
                         bar_width * epoch_percentage)) + '|' +
                       f"{epoch_percentage:4.1%}-{end-start:4.2f}s" +
-                      f"\t val_loss: {val_loss:.5}, val_acc: {val_acc:6.3%}",
+                      f"\t val_loss: {val_loss:.5}, val_acc: {val_acc:6.3%}  ",
                       end=('\r' if epoch_percentage < 1 else '\n'))
             if val_acc > best_quan_acc:
                 best_quan_acc = val_acc

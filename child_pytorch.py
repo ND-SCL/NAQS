@@ -25,6 +25,7 @@ class Cell():
         self.conv = None
         self.pool = None
         self.drop = None
+        self.bn = None
 
     def __repr__(self):
         return f"id: {self.id} " + \
@@ -148,6 +149,7 @@ def build_graph(input_shape, arch_paras):
             kernel_size=(filter_height, filter_width),
             stride=(stride_height, stride_width)
             )
+        cell.bn = nn.BatchNorm2d(num_filters)
         padding_height, out_height = compute_padding(
                     out_height,
                     pool_size,
@@ -180,9 +182,10 @@ def compute_padding(input_size, kernel_size, stride):
 
 
 class CNN(nn.Module):
-    def __init__(self, graph, num_classes):
+    def __init__(self, graph, num_classes, do_bn=False):
         super(CNN, self).__init__()
         self.graph = graph
+        self.do_bn = do_bn
         for cell in self.graph:
             for l, p in zip(cell.prev, cell.conv_pad):
                 setattr(self, 'conv_pad_{}_{}'.format(cell.id, l), p)
@@ -190,6 +193,8 @@ class CNN(nn.Module):
             setattr(self, 'pool_pad_{}'.format(cell.id), cell.pool_pad)
             setattr(self, 'pool_{}'.format(cell.id), cell.pool)
             setattr(self, 'drop_{}'.format(cell.id), cell.drop)
+            if do_bn is True:
+                setattr(self, 'bn_{}'.format(cell.id), cell.bn)
         self.num_features = compute_num_features(self.graph[-1].output_shape)
         self.fc = nn.Linear(self.num_features, num_classes)
 
@@ -227,7 +232,11 @@ class CNN(nn.Module):
                         signed=True
                         )
                     )
-            x = F.relu(conv(x))
+            x = conv(x)
+            if self.do_bn is True:
+                bn = getattr(self, 'bn_{}'.format(cell.id))
+                x = bn(x)
+            x = F.relu(x)
             if quan_paras is not None:
                 conv.weight = nn.Parameter(weight)
                 conv.bias = nn.Parameter(bias)
@@ -266,9 +275,9 @@ def quantize(x, num_int_bits, num_frac_bits, signed=True):
 
 
 def get_model(input_shape, paras, num_classes, device=torch.device('cpu'),
-              multi_gpu=False):
+              multi_gpu=False, do_bn=False):
     graph = build_graph(input_shape, paras)
-    model = CNN(graph, num_classes).to(device)
+    model = CNN(graph, num_classes, do_bn=do_bn).to(device)
     if device.type == 'cuda' and multi_gpu is True:
         print("using parallel data")
         model = torch.nn.DataParallel(model)
