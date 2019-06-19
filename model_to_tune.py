@@ -44,4 +44,4 @@ NAS15 = [
     {'filter_height': 7, 'filter_width': 5, 'num_filters': 48,  # 14
      'anchor_point': [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1]}]
 
-paras = NAS15
+paras = SIMPLE

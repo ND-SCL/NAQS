@@ -16,9 +16,19 @@ parser.add_argument(
     help="use more than one gpu, default false"
     )
 parser.add_argument(
+    '-op', '--optimizer',
+    choices=['adam', 'sgd', 'rms'],
+    help="optimizer: 'adam', 'sgd' (default), and 'rms'"
+    )
+parser.add_argument(
     '-db', '--do_bn',
     action='store_true',
     help="use batch normalization, default is false"
+    )
+parser.add_argument(
+    '-a', '--augment',
+    action='store_true',
+    help="use data augmentation, default is false"
     )
 parser.add_argument(
     '-e', '--epochs',
@@ -27,32 +37,38 @@ parser.add_argument(
     help="number of epochs, default is 150"
     )
 parser.add_argument(
-    '-v', '--verbosity',
-    type=int,
-    choices=range(3),
-    default=1,
-    help="verbosity level: 0, 1 and 2 (default) with 2 being the most verbose"
-    )
-parser.add_argument(
     '-d', '--dataset',
     default='CIFAR10',
     help="supported dataset including : 1. MNIST, 2. CIFAR10 (default)"
     )
 args = parser.parse_args()
 
+print(f"dataset: \t\t\t{args.dataset}")
+print(f"optimizer: \t\t\t{args.optimizer}")
+print(f"total number of epochs: \t{args.epochs}")
+print(f"data augmentation: \t\t{args.augment}")
+print(f"do batch normalization: \t{args.do_bn}")
+print(f"using multiple gpu: \t\t{args.multi_gpu}")
+
 
 lr = 0.01
 batch_size = 64
 
 
-def lr_schedule(optimizer, epoch):
-    new_lr = lr
-    if epoch > 25:
-        new_lr = 0.001
-    if epoch > 50:
-        new_lr = 0.0008
+def lr_schedule_rms(optimizer, epoch):
+    new_lr = 0.001
     if epoch > 75:
         new_lr = 0.0005
+    if epoch > 100:
+        new_lr = 0.0003
+    adjust_learning_rate(optimizer, new_lr)
+    return new_lr
+
+
+def lr_schedule_sgd(optimizer, epoch):
+    new_lr = 0.01
+    if epoch > 50:
+        new_lr = 0.001
     if epoch > 100:
         new_lr = 0.0003
     adjust_learning_rate(optimizer, new_lr)
@@ -77,20 +93,7 @@ def tune(paras=[], dataset='CIFAR10'):
         device=device,
         multi_gpu=args.multi_gpu,
         do_bn=args.do_bn)
-    optimizer = optim.SGD(
-        model.parameters(),
-        lr=lr,
-        momentum=0.9,
-        weight_decay=1e-4,
-        nesterov=True)
-    # optimizer = optim.Adam(
-    #     model.parameters(),
-    #     lr=lr,
-    #     betas=(0.9, 0.999),
-    #     eps=1e-7,
-    #     weight_decay=0,
-    #     amsgrad=False
-    #     )
+    optimizer, lr_schedule = get_optimizer(args.optimizer, model)
     best_acc = 0
     best_quan_acc = 0
     for epoch in range(1, args.epochs+1):
@@ -101,7 +104,8 @@ def tune(paras=[], dataset='CIFAR10'):
               (f"quantized: {best_quan_acc:6.3%}" if quan_paras is not None
                else ''))
         print("Training ...")
-        running_loss, running_correction, running_total = 0, 0, 0
+        running_loss, running_correction, num_batches = 0, 0, 0
+        running_total = 0
         bar_width = 30
         start = time.time()
         for input_batch, label_batch in train_data:
@@ -110,10 +114,11 @@ def tune(paras=[], dataset='CIFAR10'):
             end = time.time()
             running_loss += batch_loss
             running_correction += batch_correction
-            running_total += 1
-            train_acc = running_correction / running_total / batch_size
-            train_loss = running_loss / running_total / batch_size
-            epoch_percentage = running_total / len(train_data)
+            num_batches += 1
+            running_total += input_batch.size(0)
+            train_acc = running_correction / running_total
+            train_loss = running_loss / running_total
+            epoch_percentage = num_batches / len(train_data)
             print('|' + '='*(math.ceil(bar_width * epoch_percentage)-1) +
                   '>' +
                   ' '*(bar_width - math.ceil(bar_width * epoch_percentage)) +
@@ -121,7 +126,8 @@ def tune(paras=[], dataset='CIFAR10'):
                   f"\t loss: {train_loss:.5}, acc: {train_acc:6.3%}  ",
                   end=('\r' if epoch_percentage < 1 else '\n'))
         print("Training finished, start evaluating ...")
-        running_loss, running_correction, running_total = 0, 0, 0
+        running_loss, running_correction, num_batches = 0, 0, 0
+        running_total = 0
         start = time.time()
         for input_batch, label_batch in val_data:
             with torch.no_grad():
@@ -130,10 +136,11 @@ def tune(paras=[], dataset='CIFAR10'):
                 end = time.time()
                 running_loss += batch_loss
                 running_correction += batch_correction
-                running_total += 1
-                val_acc = running_correction / running_total / batch_size
-                val_loss = running_loss / running_total / batch_size
-                epoch_percentage = running_total / len(val_data)
+                num_batches += 1
+                running_total += input_batch.size(0)
+                val_acc = running_correction / running_total
+                val_loss = running_loss / running_total
+                epoch_percentage = num_batches / len(val_data)
             print('|' + '='*(math.ceil(bar_width * epoch_percentage)-1) +
                   '>' +
                   ' '*(bar_width - math.ceil(bar_width * epoch_percentage)) +
@@ -146,17 +153,17 @@ def tune(paras=[], dataset='CIFAR10'):
             print("Start evaluating with quantization ...")
             start = time.time()
             for input_batch, label_batch in val_data:
-                running_loss, running_correction, running_total = 0, 0, 0
+                running_loss, running_correction, num_batches = 0, 0, 0
                 with torch.no_grad():
                     batch_loss, batch_correction = backend.batch_fit(
                         model, input_batch, label_batch, quan_paras=quan_paras)
                     end = time.time()
                     running_loss += batch_loss
                     running_correction += batch_correction
-                    running_total += input_batch.size(0)
-                    val_acc = running_correction / running_total
-                    val_loss = running_loss / running_total
-                    epoch_percentage = running_total / len(train_data)
+                    num_batches += input_batch.size(0)
+                    val_acc = running_correction / num_batches
+                    val_loss = running_loss / num_batches
+                    epoch_percentage = num_batches / len(train_data)
                 print('|' + '='*(math.ceil(bar_width * epoch_percentage)-1) +
                       '>' + ' '*(bar_width - math.ceil(
                         bar_width * epoch_percentage)) + '|' +
@@ -165,6 +172,21 @@ def tune(paras=[], dataset='CIFAR10'):
                       end=('\r' if epoch_percentage < 1 else '\n'))
             if val_acc > best_quan_acc:
                 best_quan_acc = val_acc
+
+
+def get_optimizer(type, model):
+    if type == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9,
+                              weight_decay=1e-4, nesterov=True)
+        lr_schedule = lr_schedule_sgd
+    elif type == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),
+                               eps=1e-7, weight_decay=0, amsgrad=False)
+        lr_schedule = lr_schedule_rms
+    elif type == 'rms':
+        optimizer = optim.RMSprop(model.parameters(), lr=lr, weight_decay=1e-4)
+        lr_schedule = lr_schedule_rms
+    return optimizer, lr_schedule
 
 
 if __name__ == '__main__':
