@@ -6,13 +6,14 @@ import torch.nn.functional as F
 
 
 def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
-        verbosity=0, quan_paras=None):
+        verbosity=0, quan_paras=None, lr_schedule=None):
     acc = []
     loss = []
     timer = Timer()
     timer.reset()
     for epoch in range(epochs):
-        # lr_schedule(optimizer, epoch)
+        if lr_schedule is not None:
+            lr_schedule(optimizer, epoch)
         if train_data is not None:
             if verbosity > 0:
                 print(f"Epoch {epoch+1:3d}/{epochs}: ", end='')
@@ -20,8 +21,8 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
                 model, train_data, optimizer, verbosity=verbosity)
             if verbosity > 0:
                 print(f"Train Loss: {train_loss:.5} - " +
-                      f"Train Acc: {train_acc:6.3%} -",
-                      end=' ')
+                      f"Train Acc: {train_acc:6.3%} - ",
+                      end='')
             if train_acc > 0.99:
                 break
         if val_data is not None:
@@ -31,7 +32,7 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
                     quan_paras=quan_paras
                     )
             if verbosity > 0:
-                print(f" Val Loss: {val_loss:.5} - Val Acc: {val_acc:6.3%}",
+                print(f" Val Loss: {val_loss:.5} - Val Acc: {val_acc:6.3%} - ",
                       end=' ')
             if epoch == 10 and val_acc < 0.12:
                 break
@@ -84,18 +85,6 @@ def is_convergence(latest_acc):
     else:
         latest_acc = latest_acc[-5:]
         return not (max(latest_acc) - latest_acc[0] > 0.005)
-
-
-def lr_schedule(optimizer, epoch):
-    if epoch == 15:
-        adjust_learning_rate(optimizer, 5e-3)
-    if epoch == 25:
-        adjust_learning_rate(optimizer, 1e-3)
-
-
-def adjust_learning_rate(optimizer, lr):
-    for pg in optimizer.param_groups:
-        pg['lr'] = lr
 
 
 class Timer():
