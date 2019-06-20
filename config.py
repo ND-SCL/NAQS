@@ -3,7 +3,7 @@ ARCH_SPACE = {
     "filter_width": (1, 3, 5, 7),
     'stride_height': (1, 2, 3),
     'stride_width': (1, 2, 3),
-    "num_filters": (8, 16, 24, 32, 48, 64, 96, 128),
+    "num_filters": (24, 36, 48, 64),
     "pool_size": (1, 2)
     }
 

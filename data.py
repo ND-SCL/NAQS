@@ -32,23 +32,27 @@ def get_mnist(shuffle=True, batch_size=64, augment=False):
 
 
 def get_cifar10(shuffle=True, batch_size=64, augment=False):
-    plain_transform = [
-        transforms.ToTensor(),
-        # transforms.Normalize(
-        #         (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
-        #         )
-        ]
-    if augment:
-        transform = [
-            transforms.Resize(size=(64, 64)),
-            transforms.RandomCrop(32),
+    normalize = Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+    # normalize = Normalize(
+    #     (0.47359734773635864, 0.47359734773635864, 0.47359734773635864),
+    #     (0.2515689432621002, 0.2515689432621002, 0.2515689432621002))
+    # normalize = Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    if augment is True:
+        train_transform = transforms.Compose([
+            transforms.RandomAffine(10, translate=(0.07, 0.07)),
             transforms.RandomHorizontalFlip(),
-            plain_transform[0]
-            ]
-        train_transform = transforms.Compose(transform)
+            transforms.ToTensor(),
+            normalize,
+            ])
     else:
-        train_transform = transforms.Compose(plain_transform)
-    val_transform = transforms.Compose(plain_transform)
+        train_transform = transforms.Compose([
+            transforms.ToTensor(),
+            normalize,
+            ])
+    val_transform = transforms.Compose([
+        transforms.ToTensor(),
+        normalize,
+        ])
     trainloader = DataLoader(
         datasets.CIFAR10(
             root='./data/CIFAR10',
@@ -58,7 +62,8 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
         ),
         batch_size=batch_size,
         shuffle=shuffle,
-        num_workers=2
+        num_workers=2,
+        # pin_memory=True
     )
     valloader = DataLoader(
         datasets.CIFAR10(
@@ -69,7 +74,8 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
         ),
         batch_size=batch_size,
         shuffle=False,
-        num_workers=2
+        num_workers=2,
+        # pin_memory=True
     )
     return trainloader, valloader
 
@@ -134,10 +140,51 @@ def get_data(name='MNIST', device=torch.device('cpu'), shuffle=True,
              batch_size=64, augment=False):
     trainloader, valloader = DATA[name]['generator'](
         shuffle, batch_size, augment=augment)
-    # return dataloader
     return WrappedDataLoader(trainloader, device), \
         WrappedDataLoader(valloader, device)
 
 
 def get_info(name='CIFAR10'):
     return DATA[name]['shape'], DATA[name]['num_classes']
+
+
+class Normalize():
+    def __init__(self, mean=None, std=None):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, x):
+        if self.mean is None:
+            mean = x.mean([1, 2], True)
+        else:
+            mean = torch.tensor(
+                self.mean).unsqueeze(-1).unsqueeze(-1).expand_as(x).type_as(x)
+        if self.std is None:
+            std = x.std(1, True, True).std(2, True, True)
+        else:
+            std = torch.tensor(
+                self.std).unsqueeze(-1).unsqueeze(-1).expand_as(x).type_as(x)
+        return (x - mean) / std
+
+
+def get_mean():
+    trainloader = DataLoader(
+        datasets.CIFAR10(
+            root='./data/CIFAR10',
+            train=True,
+            download=True,
+            transform=transforms.Compose([transforms.ToTensor()]),
+        ),
+        batch_size=50000,
+        shuffle=False,
+        num_workers=2)
+    for batch, _ in trainloader:
+        # print(batch[0][0])
+        pass
+    # return batch.mean([0, 2, 3]), \
+    #     (batch[:, 0].std(), batch[:, 1].std(), batch[:, 2].std())
+    return batch.mean().item(), batch.std().item()
+
+
+if __name__ == '__main__':
+    print(get_mean())

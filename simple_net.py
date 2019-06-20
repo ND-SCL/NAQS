@@ -103,9 +103,8 @@ if __name__ == '__main__':
     backend.fit(
         model, optimizer,
         train_data, val_data,
-        epochs=40,
-        verbose=True,
-        early_stop=False
+        epochs=200,
+        verbosity=1
         )
     end = time.time()
     print(end-start)

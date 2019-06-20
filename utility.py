@@ -63,6 +63,7 @@ class BestSamples(object):
         return str(dict(zip(self.id_list, self.reward_list)))
 
 
+
 if __name__ == '__main__':
     paras = [
         {'filter_height': 3, 'filter_width': 3, 'num_filters': 36,  # 0
@@ -99,3 +100,4 @@ if __name__ == '__main__':
     print(arch_paras)
     print()
     print(quan_paras)
+
