@@ -157,7 +157,6 @@ def nas(device, dir='experiment'):
     logger.info(f"data augmentation: \t\t\t {args.augment}")
     logger.info(f"batch size: \t\t\t\t {args.batch_size}")
     logger.info(f"architecture episodes: \t\t\t {args.episodes}")
-    logger.info(f"verbosity: \t\t\t\t {args.verbosity}")
     logger.info(f"using multi gpus: \t\t\t {args.multi_gpu}")
     logger.info(f"architecture space: ")
     for name, value in ARCH_SPACE.items():
