@@ -196,7 +196,9 @@ class CNN(nn.Module):
             if do_bn is True:
                 setattr(self, 'bn_{}'.format(cell.id), cell.bn)
         self.num_features = compute_num_features(self.graph[-1].output_shape)
-        self.fc = nn.Linear(self.num_features, num_classes)
+        self.fc1 = nn.Linear(self.num_features, 256)
+        self.fc_bn = nn.BatchNorm1d(256)
+        self.fc2 = nn.Linear(256, num_classes)
 
     def forward(self, x, quan_paras=None):
         if quan_paras is not None:
@@ -215,42 +217,45 @@ class CNN(nn.Module):
             pool = getattr(self, 'pool_{}'.format(cell.id))
             drop = getattr(self, 'drop_{}'.format(cell.id))
             if quan_paras is not None:
+                # print("before conv", conv.weight)
                 weight, bias = conv.weight, conv.bias
-                conv.weight = nn.Parameter(
-                    quantize(
-                        weight,
-                        quan_paras[cell.id]['weight_num_int_bits'],
-                        quan_paras[cell.id]['weight_num_frac_bits'],
-                        signed=True
-                        )
-                    )
-                conv.bias = nn.Parameter(
-                    quantize(
+                # print("before quantization bias", bias)
+                # print("before quantization conv_bias", conv.bias)
+                weight = quantize(
+                            weight,
+                            quan_paras[cell.id]['weight_num_int_bits'],
+                            quan_paras[cell.id]['weight_num_frac_bits'],
+                            signed=True)
+                bias = quantize(
                         bias,
                         quan_paras[cell.id]['weight_num_int_bits'],
                         quan_paras[cell.id]['weight_num_frac_bits'],
                         signed=True
                         )
-                    )
-            x = conv(x)
-            if self.do_bn is True:
-                bn = getattr(self, 'bn_{}'.format(cell.id))
-                x = bn(x)
-            x = F.relu(x)
-            if quan_paras is not None:
-                conv.weight = nn.Parameter(weight)
-                conv.bias = nn.Parameter(bias)
+                stride = conv.stride
+                x = F.conv2d(x, weight, bias, stride=stride)
                 x = quantize(
                     x,
                     quan_paras[cell.id]['act_num_int_bits'],
                     quan_paras[cell.id]['act_num_frac_bits'],
                     signed=False
                     )
+            else:
+                x = conv(x)
+            x = F.relu(x)
+            if self.do_bn is True:
+                bn = getattr(self, 'bn_{}'.format(cell.id))
+                x = bn(x)
             x = pool(F.pad(x, pool_pad))
             x = drop(x)
             output.append(x)
         x = x.view(x.size(0), -1)
-        return self.fc(x)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc_bn(x)
+        x = nn.Dropout(p=0.5)(x)
+        x = self.fc2(x)
+        return x
 
     def quantize_weight(self, num_int_bits, num_frac_bits):
         for cell in self.graph:
@@ -277,11 +282,11 @@ def quantize(x, num_int_bits, num_frac_bits, signed=True):
 def get_model(input_shape, paras, num_classes, device=torch.device('cpu'),
               multi_gpu=False, do_bn=False):
     graph = build_graph(input_shape, paras)
-    model = CNN(graph, num_classes, do_bn=do_bn).to(device)
-    if device.type == 'cuda' and multi_gpu is True:
+    model = CNN(graph, num_classes, do_bn=do_bn)
+    if device.type != 'cpu' and multi_gpu is True:
         print("using parallel data")
         model = torch.nn.DataParallel(model)
-    return model
+    return model.to(device), get_optimizer(model, 'SGD')
 
 
 def get_optimizer(model, name='SGD'):

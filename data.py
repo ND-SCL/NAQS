@@ -32,15 +32,14 @@ def get_mnist(shuffle=True, batch_size=64, augment=False):
 
 
 def get_cifar10(shuffle=True, batch_size=64, augment=False):
-    # normalize = transforms.Normalize(
-    #         (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-    normalize = Normalize(
-        (0.47359734773635864, 0.47359734773635864, 0.47359734773635864),
-        (0.2515689432621002, 0.2515689432621002, 0.2515689432621002))
-    # normalize = Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+    normalize = Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+    # normalize = Normalize(
+    #     (0.47359734773635864, 0.47359734773635864, 0.47359734773635864),
+    #     (0.2515689432621002, 0.2515689432621002, 0.2515689432621002))
+    # normalize = Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     if augment is True:
         train_transform = transforms.Compose([
-            transforms.RandomAffine(15, translate=(0.1, 0.1)),
+            transforms.RandomAffine(10, translate=(0.07, 0.07)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             normalize,
@@ -63,7 +62,8 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
         ),
         batch_size=batch_size,
         shuffle=shuffle,
-        num_workers=2
+        num_workers=2,
+        # pin_memory=True
     )
     valloader = DataLoader(
         datasets.CIFAR10(
@@ -74,7 +74,8 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
         ),
         batch_size=batch_size,
         shuffle=False,
-        num_workers=2
+        num_workers=2,
+        # pin_memory=True
     )
     return trainloader, valloader
 
@@ -139,7 +140,6 @@ def get_data(name='MNIST', device=torch.device('cpu'), shuffle=True,
              batch_size=64, augment=False):
     trainloader, valloader = DATA[name]['generator'](
         shuffle, batch_size, augment=augment)
-    # return dataloader
     return WrappedDataLoader(trainloader, device), \
         WrappedDataLoader(valloader, device)
 

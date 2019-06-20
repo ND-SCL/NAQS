@@ -6,8 +6,9 @@ import time
 
 import torch
 
-import child_pytorch
-import child_keras
+import child
+import data
+import backend
 from controller import Agent
 from config import ARCH_SPACE, QUAN_SPACE
 from utility import BestSamples
@@ -16,7 +17,7 @@ from utility import BestSamples
 # def get_args():
 parser = argparse.ArgumentParser('Parser User Input Arguments')
 parser.add_argument(
-    '-m', '--mode',
+    'mode',
     default='nas',
     choices=['nas', 'joint'],
     help="supported dataset including : 1. nas (default), 2. joint"
@@ -50,17 +51,16 @@ parser.add_argument(
     action='store_true',
     help="include stride in the architecture space, default is false"
     )
-# parser.add_argument(
-#     '-lr', '--learning_rate',
-#     type=float,
-#     default=0.001,
-#     help="the learning rate for training the CNN"
-#     )
+parser.add_argument(
+    '-p', '--pooling',
+    action='store_true',
+    help="include max pooling in the architecture space, default is false"
+    )
 parser.add_argument(
     '-b', '--batch_size',
     type=int,
-    default=5,
-    help="the batch size used to train the controller, default is 5"
+    default=64,
+    help="the batch size used to train the child CNN, default is 64"
     )
 parser.add_argument(
     '-s', '--seed',
@@ -69,25 +69,26 @@ parser.add_argument(
     help="seed for randomness, default is 0"
     )
 parser.add_argument(
+    '-g', '--gpu',
+    type=int,
+    default=0,
+    help="in single gpu mode the id of the gpu used, default is 0"
+    )
+parser.add_argument(
     '-k', '--skip',
     action='store_true',
     help="include skip connection in the architecture, default is false"
     )
 parser.add_argument(
-    '-f', '--framework',
-    choices=['keras', 'pytorch'],
-    default='pytorch',
-    help="framework 'keras' or 'pytorch (default)'")
-# parser.add_argument(
-#     '-a', '--augment',
-#     action='store_true',
-#     help="augment training data"
-#     )
-# parser.add_argument(
-#     '-r', '--early_stop',
-#     action='store_true',
-#     help="the total epochs for model fitting"
-#     )
+    '-a', '--augment',
+    action='store_true',
+    help="augment training data"
+    )
+parser.add_argument(
+    '-m', '--multi_gpu',
+    action='store_true',
+    help="use all gpus available, default false"
+    )
 parser.add_argument(
     '-v', '--verbosity',
     type=int,
@@ -103,6 +104,10 @@ if args.stride is False:
         ARCH_SPACE.pop('stride_height')
     if 'stride_width' in ARCH_SPACE:
         ARCH_SPACE.pop('stride_width')
+
+if args.pooling is False:
+    if 'pool_size' in ARCH_SPACE:
+        ARCH_SPACE.pop('pool_size')
 
 
 def get_logger(filepath=None):
@@ -120,15 +125,15 @@ def get_logger(filepath=None):
     return logger
 
 
-framework = child_keras if args.framework == 'keras' else child_pytorch
-
-
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available()
+                          else "cpu")
     print(f"using device {device}")
     dir = os.path.join(
-        f'experiment ({args.framework})',
+        f'experiment',
         'non_linear' if args.skip else 'linear',
+        ('with' if args.stride else 'without') + ' stride, ' +
+        ('with' if args.pooling else 'without') + ' pooling',
         args.dataset + f"({args.layers} layers)"
         )
     if os.path.exists(dir) is False:
@@ -145,27 +150,29 @@ def nas(device, dir='experiment'):
     logger.info(f"mode: \t\t\t\t\t {'nas'}")
     logger.info(f"dataset: \t\t\t\t {args.dataset}")
     logger.info(f"number of child network layers: \t {args.layers}")
-    logger.info(f"training epochs: \t\t\t {args.epochs}")
-    logger.info(f"skip connection: \t\t\t {args.skip}")
-    logger.info(f"architecture episodes: \t\t\t {args.episodes}")
-    logger.info(f"batch size: \t\t\t\t {args.batch_size}")
-    logger.info(f"verbosity: \t\t\t\t {args.verbosity}")
-    logger.info(f"framework: \t\t\t\t {args.framework}")
     logger.info(f"include stride: \t\t\t {args.stride}")
+    logger.info(f"include pooling: \t\t\t {args.pooling}")
+    logger.info(f"skip connection: \t\t\t {args.skip}")
+    logger.info(f"training epochs: \t\t\t {args.epochs}")
+    logger.info(f"data augmentation: \t\t\t {args.augment}")
+    logger.info(f"batch size: \t\t\t\t {args.batch_size}")
+    logger.info(f"architecture episodes: \t\t\t {args.episodes}")
+    logger.info(f"verbosity: \t\t\t\t {args.verbosity}")
+    logger.info(f"using multi gpus: \t\t\t {args.multi_gpu}")
     logger.info(f"architecture space: ")
     for name, value in ARCH_SPACE.items():
         logger.info(name + f": \t\t\t\t {value}")
-    agent = Agent(
-        ARCH_SPACE, args.layers, args.batch_size,
-        device=torch.device('cpu'),
-        skip=args.skip)
-    child = framework.ChildCNN(dataset=args.dataset)
+    agent = Agent(ARCH_SPACE, args.layers, args.batch_size,
+                  device=torch.device('cpu'), skip=args.skip)
+    train_data, val_data = data.get_data(
+        args.dataset, device, shuffle=True,
+        batch_size=args.batch_size, augment=args.augment)
+    input_shape, num_classes = data.get_info(args.dataset)
     writer.writerow(["ID"] +
                     ["Layer {}".format(i) for i in range(args.layers)] +
                     ["Accuracy", "Time"]
                     )
-    arch_id = 0
-    total_time = 0
+    arch_id, total_time = 0, 0
     logger.info('=' * 50 + "Start exploring architecture space" + '=' * 50)
     logger.info('-' * len("Start exploring architecture space"))
     best_samples = BestSamples(5)
@@ -175,13 +182,12 @@ def nas(device, dir='experiment'):
         arch_rollout, arch_paras = agent.rollout()
         logger.info("Sample Architecture ID: {}, Sampled actions: {}".format(
                     arch_id, arch_rollout))
-        child.update_architecture(arch_paras)
-        _, arch_reward = child.fit(
-            epochs=args.epochs,
-            validate=True,
-            quantize=False,
-            verbosity=args.verbosity)
-        child.collect_garbage()
+        model, optimizer = child.get_model(
+            input_shape, arch_paras, num_classes, device,
+            multi_gpu=args.multi_gpu, do_bn=False)
+        _, arch_reward = backend.fit(
+            model, optimizer, train_data, val_data,
+            epochs=args.epochs, verbosity=args.verbosity)
         agent.store_rollout(arch_rollout, arch_reward)
         end = time.time()
         ep_time = end - start
@@ -199,7 +205,7 @@ def nas(device, dir='experiment'):
                     f"Rollout: {best_samples.rollout_list[0]}")
         logger.info('-' * len("Start exploring architecture space"))
     logger.info(
-        '=' * 60 + "Architecture sapce exploration finished" + '=' * 60)
+        '=' * 50 + "Architecture sapce exploration finished" + '=' * 50)
     logger.info(f"Total elasped time: {total_time}")
     logger.info(f"Best samples: {best_samples}")
     csvfile.close()

@@ -1,16 +1,16 @@
 SIMPLE = [
     {'num_filters': 32, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 1, 'anchor_point': []},
+     'pool_size': 1},
     {'num_filters': 32, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 2, 'anchor_point': [1]},
+     'pool_size': 2},
     {'num_filters': 64, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 1, 'anchor_point': [0, 1]},
+     'pool_size': 1},
     {'num_filters': 64, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 2, 'anchor_point': [0, 0, 1]},
+     'pool_size': 2},
     {'num_filters': 128, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 1, 'anchor_point': [0, 0, 0, 1]},
+     'pool_size': 1},
     {'num_filters': 128, 'filter_height': 3, 'filter_width': 3,
-     'pool_size': 2, 'anchor_point': [0, 0, 0, 0, 1]}]
+     'pool_size': 2}]
 
 NAS15 = [
     {'filter_height': 3, 'filter_width': 3, 'num_filters': 36,  # 0
@@ -45,3 +45,8 @@ NAS15 = [
      'anchor_point': [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1]}]
 
 paras = SIMPLE
+for layer in paras:
+    layer['act_num_int_bits'] = 1
+    layer['act_num_frac_bits'] = 4
+    layer['weight_num_int_bits'] = 2
+    layer['weight_num_frac_bits'] = 5
