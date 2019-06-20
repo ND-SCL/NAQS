@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import data
-import backend_pytorch as backend
+import backend
 
 
 drop_rate = 0.2
