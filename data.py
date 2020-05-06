@@ -62,7 +62,7 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
         ),
         batch_size=batch_size,
         shuffle=shuffle,
-        num_workers=2,
+        num_workers=4,
         # pin_memory=True
     )
     valloader = DataLoader(
@@ -74,32 +74,96 @@ def get_cifar10(shuffle=True, batch_size=64, augment=False):
         ),
         batch_size=batch_size,
         shuffle=False,
-        num_workers=2,
+        num_workers=4,
         # pin_memory=True
     )
     return trainloader, valloader
 
 
-def get_hymenoptera_data():
-    hymenoptera_data_transform = transforms.Compose([
-        transforms.ToTensor()])
+def get_imagenet(shuffle=True, batch_size=64, augment=False):
+    normalize = transforms.Normalize(
+        (0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    # normalize = transforms.Normalize(
+    #     (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    if augment is True:
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize
+            ])
+    else:
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.ToTensor(),
+            normalize
+            ])
+    val_transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        normalize
+        ])
+    # train_transform = val_transform
     trainloader = DataLoader(
         datasets.ImageFolder(
-            root='./data/hymenoptera_data/train',
-            transform=hymenoptera_data_transform
+            root='/ImageNet/train',
+            transform=train_transform
         ),
-        batch_size=1,
-        shuffle=True,
-        num_workers=2
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=4
     )
     valloader = DataLoader(
         datasets.ImageFolder(
-            root='./data/hymenoptera_data/val',
-            transform=hymenoptera_data_transform
+            root='/ImageNet/val',
+            transform=val_transform
         ),
-        batch_size=1,
-        shuffle=False,
-        num_workers=2
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=4
+    )
+    return trainloader, valloader
+
+
+def get_tiny_imagenet(shuffle=True, batch_size=64, augment=False):
+    # normalize = transforms.Normalize(
+    #     (0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    normalize = transforms.Normalize(
+        (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    if augment is True:
+        train_transform = transforms.Compose([
+            transforms.RandomAffine(10, translate=(0.07, 0.07)),
+            transforms.ToTensor(),
+            normalize
+            ])
+    else:
+        train_transform = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+            ])
+    val_transform = transforms.Compose([
+        transforms.ToTensor(),
+        normalize
+        ])
+    # train_transform = val_transform
+    trainloader = DataLoader(
+        datasets.ImageFolder(
+            root='./data/TinyImageNet/train',
+            transform=train_transform
+        ),
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=4
+    )
+    valloader = DataLoader(
+        datasets.ImageFolder(
+            root='./data/TinyImageNet/val',
+            transform=val_transform
+        ),
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=4
     )
     return trainloader, valloader
 
@@ -115,10 +179,15 @@ DATA = {
         'shape': (3, 32, 32),
         'num_classes': 10
         },
-    'hymenoptera_data': {
-        'generator': get_hymenoptera_data,
-        'shape': (),
-        'num_classes': 2
+    'ImageNet': {
+        'generator': get_imagenet,
+        'shape': (3, 224, 224),
+        'num_classes': 10
+        },
+    'TinyImageNet': {
+        'generator': get_tiny_imagenet,
+        'shape': (3, 64, 64),
+        'num_classes': 200
         }
 }
 

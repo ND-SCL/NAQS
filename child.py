@@ -11,7 +11,8 @@ import backend
 
 drop_rate = 0.2
 
-drop_rates = [0, 0.2, 0, 0.3, 0, 0.4, 0, 0, 0.5, 0, 0, 0.5, 0, 0, 0.5]
+drop_rates = [0, 0.2, 0, 0.3, 0, 0.4, 0, 0, 0.5, 0, 0, 0.5, 0, 0, 0.5,
+              0, 0, 0.5]
 
 
 class Cell():
@@ -26,6 +27,7 @@ class Cell():
         self.pool = None
         self.drop = None
         self.bn = None
+        self.para_num = 0
 
     def __repr__(self):
         return f"id: {self.id} " + \
@@ -43,7 +45,7 @@ class Cell():
 def build_graph(input_shape, arch_paras):
     graph = []
     cell_id = 0
-    prev_output_shape = input_shape
+    last_output_shape = input_shape
     for layer_paras in arch_paras:
         cell = Cell(cell_id)
         num_filters = layer_paras['num_filters']
@@ -56,18 +58,13 @@ def build_graph(input_shape, arch_paras):
         pool_size = layer_paras['pool_size'] \
             if 'pool_size' in layer_paras else 1
         pool_stride = pool_size
+        cell.prev = [cell.id - 1]
+        in_channels, in_height, in_width = last_output_shape
         if 'anchor_point' in layer_paras:
             anchor_point = layer_paras['anchor_point']
-            in_channels, in_height, in_width = 0, 0, 0
             out_height, out_width = 0, 0
-            if cell_id == len(arch_paras) - 1:
-                for i in range(cell_id):
-                    if graph[i].used is False:
-                        anchor_point[i] = 1
-                        # graph[i].used = True
             for l in range(len(anchor_point)):
                 if anchor_point[l] == 1:
-                    graph[l].used = True
                     cell.prev.append(l)
                     in_channels += graph[l].output_shape[0]
                     in_height = max(
@@ -76,73 +73,49 @@ def build_graph(input_shape, arch_paras):
                     in_width = max(
                         in_width, graph[l].output_shape[2]
                         )
-            if cell.prev:
-                for p in cell.prev:
-                    padding_height, out_height = compute_padding(
-                        in_height,
-                        filter_height,
-                        stride_height
-                        )
-                    padding_width, out_width = compute_padding(
-                        in_width,
-                        filter_width,
-                        stride_width
-                        )
-                    cell.conv_pad.append((
-                        math.floor(
-                            (in_width + padding_width -
-                                graph[p].output_shape[2])/2),
-                        math.ceil(
-                            (in_width + padding_width -
-                                graph[p].output_shape[2])/2),
-                        math.floor(
-                            (in_height + padding_height -
-                                graph[p].output_shape[1])/2),
-                        math.ceil(
-                            (in_height + padding_height -
-                                graph[p].output_shape[1])/2)
-                            )
-                        )
-            else:
-                cell.prev.append(-1)
-                in_channels = input_shape[0]
-                out_height = math.ceil(
-                    (input_shape[1] - filter_height) / stride_height) + 1
-                out_width = math.ceil(
-                    (input_shape[2] - filter_width) / stride_width) + 1
-                padding_height, out_height = compute_padding(
-                        input_shape[1],
-                        filter_height,
-                        stride_height
-                        )
-                padding_width, out_width = compute_padding(
-                        input_shape[2],
-                        filter_width,
-                        stride_width
-                        )
-                cell.conv_pad = [(
-                    math.floor(padding_width/2),
-                    math.ceil(padding_width/2),
-                    math.floor(padding_height/2),
-                    math.ceil(padding_height/2))]
-        else:
-            cell.prev = [cell.id - 1]
-            in_channels, in_height, in_width = prev_output_shape
+        for p in cell.prev:
             padding_height, out_height = compute_padding(
-                        in_height,
-                        filter_height,
-                        stride_height
-                        )
+                in_height,
+                filter_height,
+                stride_height
+                )
             padding_width, out_width = compute_padding(
-                        in_width,
-                        filter_width,
-                        stride_width
-                        )
-            cell.conv_pad = [(
-                    math.floor(padding_width/2),
-                    math.ceil(padding_width/2),
-                    math.floor(padding_height/2),
-                    math.ceil(padding_height/2))]
+                in_width,
+                filter_width,
+                stride_width
+                )
+            prev_output_shape = input_shape if p < 0 else graph[p].output_shape
+            cell.conv_pad.append((
+                math.floor(
+                    (in_width + padding_width -
+                        prev_output_shape[2])/2),
+                math.ceil(
+                    (in_width + padding_width -
+                        prev_output_shape[2])/2),
+                math.floor(
+                    (in_height + padding_height -
+                        prev_output_shape[1])/2),
+                math.ceil(
+                    (in_height + padding_height -
+                        prev_output_shape[1])/2)
+                    )
+                )
+        # else:
+        #     padding_height, out_height = compute_padding(
+        #                 in_height,
+        #                 filter_height,
+        #                 stride_height
+        #                 )
+        #     padding_width, out_width = compute_padding(
+        #                 in_width,
+        #                 filter_width,
+        #                 stride_width
+        #                 )
+        #     cell.conv_pad = [(
+        #             math.floor(padding_width/2),
+        #             math.ceil(padding_width/2),
+        #             math.floor(padding_height/2),
+        #             math.ceil(padding_height/2))]
         cell.in_channels = in_channels
         cell.conv = nn.Conv2d(
             cell.in_channels, num_filters,
@@ -160,7 +133,6 @@ def build_graph(input_shape, arch_paras):
                     pool_size,
                     pool_stride,
                     )
-        # print("out_height: ", out_height)
         cell.output_shape = (num_filters, out_height, out_width)
         cell.pool_pad = (
                     math.floor(padding_width/2),
@@ -169,9 +141,11 @@ def build_graph(input_shape, arch_paras):
                     math.ceil(padding_height/2))
         cell.pool = nn.MaxPool2d(pool_size)
         cell.drop = nn.Dropout(p=drop_rates[cell.id])
+        cell.para_num = (in_channels * filter_height * filter_width + 1
+                         ) * num_filters
         graph.append(cell)
         cell_id += 1
-        prev_output_shape = cell.output_shape
+        last_output_shape = cell.output_shape
     return graph
 
 
@@ -217,10 +191,7 @@ class CNN(nn.Module):
             pool = getattr(self, 'pool_{}'.format(cell.id))
             drop = getattr(self, 'drop_{}'.format(cell.id))
             if quan_paras is not None:
-                # print("before conv", conv.weight)
                 weight, bias = conv.weight, conv.bias
-                # print("before quantization bias", bias)
-                # print("before quantization conv_bias", conv.bias)
                 weight = quantize(
                             weight,
                             quan_paras[cell.id]['weight_num_int_bits'],
@@ -252,7 +223,8 @@ class CNN(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         x = F.relu(x)
-        x = self.fc_bn(x)
+        if self.do_bn is True:
+            x = self.fc_bn(x)
         x = nn.Dropout(p=0.5)(x)
         x = self.fc2(x)
         return x
@@ -398,30 +370,35 @@ if __name__ == '__main__':
     # graph = build_graph(input_shape, paras)
     # for cell in graph:
     #     print(cell)
-    paras = [{'num_filters': 24, 'filter_height': 3, 'filter_width': 5,
-             'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
-             {'num_filters': 48, 'filter_height': 3, 'filter_width': 5,
-             'stride_height': 1, 'stride_width': 2, 'pool_size': 1},
-             {'num_filters': 48, 'filter_height': 5, 'filter_width': 3,
-             'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
-             {'num_filters': 48, 'filter_height': 7, 'filter_width': 7,
-             'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
-             {'num_filters': 48, 'filter_height': 5, 'filter_width': 7,
-             'stride_height': 2, 'stride_width': 1, 'pool_size': 2},
-             {'num_filters': 48, 'filter_height': 5, 'filter_width': 7,
-             'stride_height': 1, 'stride_width': 1, 'pool_size': 1}]
-    # paras = [{'num_filters': 32, 'filter_height': 3, 'filter_width': 3,
-    #          'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
-    #          {'num_filters': 128, 'filter_height': 3, 'filter_width': 5,
-    #           'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
-    #          {'num_filters': 64, 'filter_height': 3, 'filter_width': 3,
-    #           'stride_height': 1, 'stride_width': 1, 'pool_size': 2},
-    #          {'num_filters': 96, 'filter_height': 5, 'filter_width': 5,
-    #           'stride_height': 1, 'stride_width': 1, 'pool_size': 2},
-    #          {'num_filters': 128, 'filter_height': 3, 'filter_width': 7,
-    #           'stride_height': 1, 'stride_width': 1, 'pool_size': 1},
-    #          {'num_filters': 64, 'filter_height': 3, 'filter_width': 7,
-    #           'stride_height': 1, 'stride_width': 2, 'pool_size': 1}]
+    arch_paras = [
+        {'anchor_point': [], 'filter_height': 5, 'filter_width': 5,
+         'num_filters': 64, 'pool_size': 2,
+         'act_num_int_bits': 2, 'act_num_frac_bits': 4,
+         'weight_num_int_bits': 2, 'weight_num_frac_bits': 6},
+        {'anchor_point': [], 'filter_height': 7, 'filter_width': 5,
+         'num_filters': 36, 'pool_size': 2,
+         'act_num_int_bits': 2, 'act_num_frac_bits': 1,
+         'weight_num_int_bits': 1, 'weight_num_frac_bits': 5},
+        {'anchor_point': [0], 'filter_height': 7, 'filter_width': 3,
+         'num_filters': 64, 'pool_size': 2,
+         'act_num_int_bits': 2, 'act_num_frac_bits': 5,
+         'weight_num_int_bits': 2, 'weight_num_frac_bits': 4},
+        {'anchor_point': [0, 0], 'filter_height': 1, 'filter_width': 7,
+         'num_filters': 48, 'pool_size': 2,
+         'act_num_int_bits': 1, 'act_num_frac_bits': 3,
+         'weight_num_int_bits': 3, 'weight_num_frac_bits': 6},
+        {'anchor_point': [1, 0, 1], 'filter_height': 1, 'filter_width': 1,
+         'num_filters': 64, 'pool_size': 2,
+         'act_num_int_bits': 2, 'act_num_frac_bits': 4,
+         'weight_num_int_bits': 2, 'weight_num_frac_bits': 4},
+        {'anchor_point': [0, 0, 0, 0], 'filter_height': 1, 'filter_width': 1,
+         'num_filters': 24, 'pool_size': 2,
+         'act_num_int_bits': 2, 'act_num_frac_bits': 3,
+         'weight_num_int_bits': 0, 'weight_num_frac_bits': 5}]
+    model, optimizer = get_model(
+                input_shape, arch_paras, num_classes)
+    x = torch.randn(1, *input_shape)
+    print(model.graph)
     # model = CNN(input_shape, paras, num_classes)
     # input = torch.randn(5, *input_shape)
     # print(input.shape)

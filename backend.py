@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 
 
-def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
+def fit(model, optimizer=None, train_data=None, val_data=None, epochs=40,
         verbosity=0, quan_paras=None, lr_schedule=None):
     acc = []
     loss = []
@@ -19,12 +19,12 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
                 print(f"Epoch {epoch+1:3d}/{epochs}: ", end='')
             train_loss, train_acc = epoch_fit(
                 model, train_data, optimizer, verbosity=verbosity)
+            if train_acc > 0.99:
+                break
             if verbosity > 0:
                 print(f"Train Loss: {train_loss:.5} - " +
                       f"Train Acc: {train_acc:6.3%} - ",
                       end='')
-            if train_acc > 0.99:
-                break
         if val_data is not None:
             with torch.no_grad():
                 val_loss, val_acc = epoch_fit(
@@ -34,12 +34,12 @@ def fit(model, optimizer, train_data=None, val_data=None, epochs=40,
             if verbosity > 0:
                 print(f" Val Loss: {val_loss:.5} - Val Acc: {val_acc:6.3%} - ",
                       end=' ')
-            if epoch == 10 and val_acc < 0.12:
-                break
             acc.append(val_acc)
             loss.append(val_loss)
         if verbosity > 0:
             print(f"Elasped time: {timer.sample()}")
+        # if epoch == 10 and val_data is not None and val_acc < 0.12:
+        #     break
     if len(acc) > 4:
         return np.mean(loss[-5:]), np.mean(acc[-5:])  # train and validate
     elif len(acc) == 0:

@@ -8,6 +8,7 @@ import backend
 import model_to_tune
 import time
 import math
+import csv
 
 parser = argparse.ArgumentParser('Parser User Input Arguments')
 parser.add_argument(
@@ -41,12 +42,13 @@ parser.add_argument(
     '-bs', '--batch_size',
     type=int,
     default=64,
-    help="number of epochs, default is 150"
+    help="batch_size, default is 64"
     )
 parser.add_argument(
     '-d', '--dataset',
     default='CIFAR10',
-    help="supported dataset including : 1. MNIST, 2. CIFAR10 (default)"
+    help="""supported dataset including : 1. MNIST, 2. CIFAR10 (default),
+            3. ImageNet"""
     )
 args = parser.parse_args()
 
@@ -78,6 +80,8 @@ def lr_schedule_sgd(optimizer, epoch):
         new_lr = 0.001
     if epoch > 80:
         new_lr = 0.0003
+    if epoch > 120:
+        new_lr = 0.0001
     adjust_learning_rate(optimizer, new_lr)
     return new_lr
 
@@ -94,7 +98,7 @@ def tune(paras=[], dataset='CIFAR10'):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, val_data = data.get_data(
         name=dataset, device=device,
-        shuffle=True, batch_size=args.batch_size, augment=True)
+        shuffle=True, batch_size=args.batch_size, augment=args.augment)
     model, _ = get_model(
         input_shape, arch_paras, num_classes,
         device=device,
@@ -103,6 +107,9 @@ def tune(paras=[], dataset='CIFAR10'):
     optimizer, lr_schedule = get_optimizer(args.optimizer, model)
     best_acc = 0
     best_quan_acc = 0
+    cvsfile = open('tune.csv', mode='w+', newline='')
+    writer = csv.writer(cvsfile)
+    writer.writerow(['Epoch', 'train acc', 'val acc', 'quan acc'])
     for epoch in range(1, args.epochs+1):
         # print('before training ', model.conv_1.bias, model.conv_2.bias)
         epoch_lr = lr_schedule(optimizer, epoch)
@@ -160,6 +167,7 @@ def tune(paras=[], dataset='CIFAR10'):
                   end=('\r' if epoch_percentage < 1 else '\n'))
         if val_acc > best_acc:
             best_acc = val_acc
+        quan_acc = 'N/A'
         if quan_paras is not None:
             print("Start evaluating with quantization ...")
             running_loss, running_correction, num_batches = 0, 0, 0
@@ -174,17 +182,23 @@ def tune(paras=[], dataset='CIFAR10'):
                     running_correction += batch_correction
                     num_batches += 1
                     running_total += input_batch.size(0)
-                    val_acc = running_correction / running_total
-                    val_loss = running_loss / running_total
+                    quan_acc = running_correction / running_total
+                    quan_loss = running_loss / running_total
                     epoch_percentage = num_batches / len(val_data)
                 print('|' + '='*(math.ceil(bar_width * epoch_percentage)-1) +
                       '>' + ' '*(bar_width - math.ceil(
                         bar_width * epoch_percentage)) +
                       '|' + f"{epoch_percentage:4.1%}-{end-start:4.2f}s" +
-                      f"\t loss: {val_loss:.5}, acc: {val_acc:6.3%}  ",
+                      f"\t loss: {quan_loss:.5}, acc: {quan_acc:6.3%}  ",
                       end=('\r' if epoch_percentage < 1 else '\n'))
-            if val_acc > best_quan_acc:
-                best_quan_acc = val_acc
+            if quan_acc > best_quan_acc:
+                best_quan_acc = quan_acc
+        writer.writerow([str(epoch), train_acc, val_acc, quan_acc])
+    print(f"Finished tuning ... final accuracy: {best_acc:6.3%}, " +
+          f"quantized accuracy :{best_quan_acc:6.3%}")
+    para_num, para_size = compute_parameter_number(model.graph, quan_paras)
+    print(f"Total number of parameters: {para_num}")
+    print(f"Total parameter size: {para_size if para_size > 0 else 'N/A'}")
 
 
 def get_optimizer(type, model):
@@ -200,6 +214,18 @@ def get_optimizer(type, model):
         optimizer = optim.RMSprop(model.parameters(), lr=lr, weight_decay=1e-4)
         lr_schedule = lr_schedule_rms
     return optimizer, lr_schedule
+
+
+def compute_parameter_number(graph, quan_paras=None):
+    total_para_num = 0
+    total_para_size = 0
+    for cell in graph:
+        total_para_num += cell.para_num
+        if quan_paras is not None:
+            total_para_size += cell.para_num * (
+                quan_paras[cell.id]['weight_num_int_bits'] +
+                quan_paras[cell.id]['weight_num_frac_bits'])
+    return total_para_num, total_para_size
 
 
 if __name__ == '__main__':

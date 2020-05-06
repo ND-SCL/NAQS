@@ -44,6 +44,18 @@ def split_paras(paras):
     return arch_paras, quan_paras
 
 
+def combine_rollout(arch_rollout, quan_rollout, num_layers):
+    arch_num_paras_per_layer = int(len(arch_rollout) / num_layers)
+    quan_num_paras_per_layer = int(len(quan_rollout) / num_layers)
+    result = []
+    for i in range(num_layers):
+        result += arch_rollout[i * arch_num_paras_per_layer:
+                               arch_num_paras_per_layer * (i + 1)]
+        result += quan_rollout[i * quan_num_paras_per_layer:
+                               quan_num_paras_per_layer * (i + 1)]
+    return result
+
+
 class BestSamples(object):
     def __init__(self, length=5):
         self.length = length
@@ -65,39 +77,42 @@ class BestSamples(object):
 
 
 if __name__ == '__main__':
-    paras = [
-        {'filter_height': 3, 'filter_width': 3, 'num_filters': 36,  # 0
-         'anchor_point': []},
-        {'filter_height': 3, 'filter_width': 3, 'num_filters': 48,  # 1
-         'anchor_point': [1]},
-        {'filter_height': 3, 'filter_width': 3, 'num_filters': 36,  # 2
-         'anchor_point': [1, 1]},
-        {'filter_height': 5, 'filter_width': 5, 'num_filters': 36,  # 3
-         'anchor_point': [1, 1, 1]},
-        {'filter_height': 3, 'filter_width': 7, 'num_filters': 48,  # 4
-         'anchor_point': [0, 0, 1, 1]},
-        {'filter_height': 7, 'filter_width': 7, 'num_filters': 48,  # 5
-         'anchor_point': [0, 1, 1, 1, 1]},
-        {'filter_height': 7, 'filter_width': 7, 'num_filters': 48,  # 6
-         'anchor_point': [0, 1, 1, 1, 1, 1]},
-        {'filter_height': 7, 'filter_width': 3, 'num_filters': 36,  # 7
-         'anchor_point': [1, 0, 0, 0, 0, 1, 1]},
-        {'filter_height': 7, 'filter_width': 1, 'num_filters': 36,  # 8
-         'anchor_point': [1, 0, 0, 0, 1, 1, 0, 1]},
-        {'filter_height': 7, 'filter_width': 7, 'num_filters': 36,  # 9
-         'anchor_point': [1, 0, 1, 1, 1, 1, 1, 1, 1]},
-        {'filter_height': 5, 'filter_width': 7, 'num_filters': 36,  # 10
-         'anchor_point': [1, 1, 0, 0, 1, 1, 1, 1, 1, 1]},
-        {'filter_height': 7, 'filter_width': 7, 'num_filters': 48,  # 11
-         'anchor_point': [1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1]},
-        {'filter_height': 7, 'filter_width': 5, 'num_filters': 48,  # 12
-         'anchor_point': [1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1]},
-        {'filter_height': 7, 'filter_width': 5, 'num_filters': 48,  # 13
-         'anchor_point': [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1]},
-        {'filter_height': 7, 'filter_width': 5, 'num_filters': 48,  # 14
-         'anchor_point': [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1]}]
-    arch_paras, quan_paras = split_paras(paras)
-    print(arch_paras)
-    print()
-    print(quan_paras)
+    # paras = [
+    #     {'filter_height': 3, 'filter_width': 3, 'num_filters': 36,  # 0
+    #      'anchor_point': []},
+    #     {'filter_height': 3, 'filter_width': 3, 'num_filters': 48,  # 1
+    #      'anchor_point': [1]},
+    #     {'filter_height': 3, 'filter_width': 3, 'num_filters': 36,  # 2
+    #      'anchor_point': [1, 1]},
+    #     {'filter_height': 5, 'filter_width': 5, 'num_filters': 36,  # 3
+    #      'anchor_point': [1, 1, 1]},
+    #     {'filter_height': 3, 'filter_width': 7, 'num_filters': 48,  # 4
+    #      'anchor_point': [0, 0, 1, 1]},
+    #     {'filter_height': 7, 'filter_width': 7, 'num_filters': 48,  # 5
+    #      'anchor_point': [0, 1, 1, 1, 1]},
+    #     {'filter_height': 7, 'filter_width': 7, 'num_filters': 48,  # 6
+    #      'anchor_point': [0, 1, 1, 1, 1, 1]},
+    #     {'filter_height': 7, 'filter_width': 3, 'num_filters': 36,  # 7
+    #      'anchor_point': [1, 0, 0, 0, 0, 1, 1]},
+    #     {'filter_height': 7, 'filter_width': 1, 'num_filters': 36,  # 8
+    #      'anchor_point': [1, 0, 0, 0, 1, 1, 0, 1]},
+    #     {'filter_height': 7, 'filter_width': 7, 'num_filters': 36,  # 9
+    #      'anchor_point': [1, 0, 1, 1, 1, 1, 1, 1, 1]},
+    #     {'filter_height': 5, 'filter_width': 7, 'num_filters': 36,  # 10
+    #      'anchor_point': [1, 1, 0, 0, 1, 1, 1, 1, 1, 1]},
+    #     {'filter_height': 7, 'filter_width': 7, 'num_filters': 48,  # 11
+    #      'anchor_point': [1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1]},
+    #     {'filter_height': 7, 'filter_width': 5, 'num_filters': 48,  # 12
+    #      'anchor_point': [1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1]},
+    #     {'filter_height': 7, 'filter_width': 5, 'num_filters': 48,  # 13
+    #      'anchor_point': [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1]},
+    #     {'filter_height': 7, 'filter_width': 5, 'num_filters': 48,  # 14
+    #      'anchor_point': [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1]}]
+    # arch_paras, quan_paras = split_paras(paras)
+    # print(arch_paras)
+    # print()
+    # print(quan_paras)
+    arch_rollout = [3, 3, 0, 0, 0, 1, 2, 2, 1, 0, 2, 1, 2, 0, 1, 2, 2, 1, 3, 3, 1, 1, 3, 0, 1, 2, 0, 2, 0, 1, 3, 2, 2, 2, 1, 1]
+    quan_rollout = [2, 1, 3, 4, 0, 0, 0, 6, 3, 2, 0, 4, 2, 4, 1, 2, 0, 2, 1, 1, 3, 6, 1, 2]
+    combine_rollout(arch_rollout, quan_rollout, 6)
 

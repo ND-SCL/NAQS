@@ -9,7 +9,6 @@ import torch.optim as optim
 input_size = 35
 hidden_size = 35
 num_layers = 2
-lr = 0.2
 
 
 class PolicyNetwork(nn.Module):
@@ -26,7 +25,7 @@ class PolicyNetwork(nn.Module):
         for i in range(self.para_num_layers):
             setattr(self, 'embedding_{}_x'.format(i),
                     nn.Embedding(self.para_num_choices[-1], input_size))
-            for k in range(i):
+            for k in range(i-1):
                 setattr(self, 'classifier_{}_x{}'.format(i, k),
                         Sigmoid(hidden_size))
             for j in range(self.num_paras_per_layer):
@@ -59,11 +58,9 @@ class PolicyNetwork(nn.Module):
     def sample_anchor(self, x, state, layer_index=0, hj_list=[]):
         embedding = getattr(self, 'embedding_{}_x'.format(layer_index))
         x = embedding(x)
-        # print(x.device)
-        # print(state[0].device, state[1].device)
         hi, state = self.rnn(x, state)
         sigmoids = []
-        for k in range(len(hj_list)):
+        for k in range(len(hj_list)-1):
             classifier = getattr(
                 self, 'classifier_{}_x{}'.format(layer_index, k))
             x = classifier(hj_list[k], hi)
@@ -84,7 +81,7 @@ class Sigmoid(nn.Module):
 
 
 class Agent():
-    def __init__(self, para_space, para_num_layers, batch_size=5,
+    def __init__(self, para_space, para_num_layers, batch_size=5, lr=0.5,
                  device=torch.device('cpu')):
         self.para_space = para_space
         self.para_num_layers = para_num_layers
@@ -97,7 +94,7 @@ class Agent():
         self.model = PolicyNetwork(tuple(len(v) for v in self.para_values),
                                    para_num_layers).to(device)
         self.optimizer = optim.SGD(self.model.parameters(), lr)
-        # self.optimizer = optim.Adam(self.model.parameters(), lr/10)
+        self.optimizer = optim.Adam(self.model.parameters(), 0.005)
         self.initial_h = torch.randn(num_layers, 1, hidden_size).to(device)
         self.initial_c = torch.randn(num_layers, 1, hidden_size).to(device)
         self.initial_input = torch.randint(
@@ -247,6 +244,10 @@ class Agent():
                 layer_paras = {}
         return paras
 
+    def adjust_learning_rate(self, lr):
+        for pg in self.optimizer.param_groups:
+            pg['lr'] = lr
+
 
 def anchor_encode(anchor_point):
     x = 0
@@ -275,10 +276,10 @@ def get_agent(para_space, para_num_layers, batch_size=5,
 
 if __name__ == '__main__':
     import torch
-    seed = 0
+    seed = 1
     torch.manual_seed(seed)
     random.seed(seed)
-    from config import ARCH_SPACE
+    from config import ARCH_SPACE, QUAN_SPACE
     from controller_bench import controller_bench
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    controller_bench(ARCH_SPACE, 12, device, epochs=1000)
+    controller_bench({**ARCH_SPACE, **QUAN_SPACE}, 6, device, skip=True, epochs=300)
